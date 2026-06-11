@@ -71,3 +71,4 @@ export default defineConfig([
   },
 ])
 ```
+# x7-pos-backoffice
