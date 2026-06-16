@@ -24,6 +24,8 @@ import {
 } from './QuickActionModals';
 import { SaasOverviewContent } from '../SaaSDashboard/SaasOverviewContent';
 import { setSimulateApiFailure, getSimulateApiFailure } from '../../services/saasService';
+import logoX7 from '../../assets/logo-x7.png';
+import { ProductCategoriesView } from './ProductCategoriesView';
 
 export const RestaurantDashboard: React.FC = () => {
   // Estados de carga e inicialización de sesión
@@ -33,14 +35,16 @@ export const RestaurantDashboard: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState<number>(0);
 
   // Estados de navegación SPA
-  const [activeCategory, setActiveCategory] = useState<string>('operations'); // Categoria activa
-  const [activeTab, setActiveTab] = useState<string>('dashboard'); // Sub-item o vista activa
+  const [activeCategory, setActiveCategory] = useState<string>('saas'); // Categoria activa
+  const [activeTab, setActiveTab] = useState<string>('saas-dashboard'); // Sub-item o vista activa
   const [showKitchenKDS, setShowKitchenKDS] = useState<boolean>(false);
+  const [isInventoryExpanded, setIsInventoryExpanded] = useState<boolean>(false);
 
   // Estados de UI
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
   const [notifications, setNotifications] = useState<SystemNotification[]>([]);
   const [demo401Toggle, setDemo401Toggle] = useState<boolean>(getSimulate401());
+  const [showDemoPanel, setShowDemoPanel] = useState<boolean>(false);
 
   // Estados de SaaS unificados
   const [searchText, setSearchText] = useState<string>('');
@@ -216,6 +220,10 @@ export const RestaurantDashboard: React.FC = () => {
       );
     }
 
+    if (activeTab === 'categories') {
+      return <ProductCategoriesView />;
+    }
+
     if (activeTab !== 'dashboard') {
       return (
         <div className="bg-white border border-[#e8e2d8] p-12 text-center rounded shadow-sm">
@@ -362,11 +370,18 @@ export const RestaurantDashboard: React.FC = () => {
       {/* Sidebar Navigation */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-[#222222] border-r border-white/10 z-50 flex flex-col">
         <div className="p-6 flex items-center gap-3">
-          <div className="flex flex-col text-left">
+          <div className="flex items-center justify-center gap-3 flex-grow">
+            <img 
+              alt="X7 Point of Sale" 
+              className="w-auto object-contain h-[60px]" 
+              src={logoX7} 
+            />
+          </div>
+          <div className="text-left">
             <h2 className="text-md font-black text-white tracking-tight leading-none">
-              X7 POINT OF SALE
+              POINT OF SALE
             </h2>
-            <span className="text-[10px] font-bold uppercase tracking-widest text-[#d51f2c] mt-1">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-[#d51f2c]">
               Backoffice
             </span>
           </div>
@@ -427,14 +442,93 @@ export const RestaurantDashboard: React.FC = () => {
             { id: 'commerce', label: 'Commerce', icon: 'storefront' },
             { id: 'growth', label: 'Growth', icon: 'trending_up' },
           ].map((cat) => {
-            const isSelected = activeTab === cat.id || (cat.id === 'operations' && activeTab === 'dashboard');
+            if (cat.id === 'inventory') {
+              const isCatActive = activeCategory === 'inventory';
+              return (
+                <div key={cat.id} className="w-full text-left">
+                  <div
+                    onClick={() => {
+                      setActiveCategory('inventory');
+                      setIsInventoryExpanded(!isInventoryExpanded);
+                      if (!['categories', 'products', 'modifiers', 'variants', 'food-costing'].includes(activeTab)) {
+                        setActiveTab('categories');
+                      }
+                    }}
+                    className={`py-2.5 px-4 flex items-center gap-3 cursor-pointer transition-colors ${
+                      isCatActive
+                        ? 'border-l-2 border-[#d51f2c] bg-white/10 text-white font-semibold'
+                        : 'text-white/70 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span className={`material-symbols-outlined text-[20px] ${isCatActive ? 'text-[#d51f2c]' : ''}`}>{cat.icon}</span>
+                    <span className="font-sans text-[13px]">{cat.label}</span>
+                  </div>
+
+                  {isInventoryExpanded && (
+                    <div className="ml-10 mt-1 border-l border-white/10 space-y-1">
+                      {/* Product/Inventory System */}
+                      <div className="pl-6 py-2 text-[#d51f2c] font-medium text-[13px] hover:bg-white/5 transition-colors flex items-center gap-2 cursor-pointer">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d51f2c]"></span>
+                        Product/Inventory System
+                      </div>
+
+                      {/* Sub-items Nivel 2 */}
+                      <div className="ml-4 mt-1 border-l border-white/10 space-y-1">
+                        {[
+                          { id: 'categories', label: 'Categories' },
+                          { id: 'products', label: 'Products' },
+                          { id: 'modifiers', label: 'Modifiers' },
+                          { id: 'variants', label: 'Variants' },
+                        ].map((sub) => {
+                          const isSubActive = activeTab === sub.id;
+                          return (
+                            <div
+                              key={sub.id}
+                              onClick={() => {
+                                setActiveCategory('inventory');
+                                setActiveTab(sub.id);
+                              }}
+                              className={`pl-4 py-1.5 text-body-sm cursor-pointer transition-colors ${
+                                isSubActive
+                                  ? 'text-[#222222] font-semibold bg-white/50 border-l-2 border-[#222222] -ml-[1px]'
+                                  : 'text-white/60 hover:text-white'
+                              }`}
+                            >
+                              {sub.label}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Food costing */}
+                      <div
+                        onClick={() => {
+                          setActiveCategory('inventory');
+                          setActiveTab('food-costing');
+                        }}
+                        className={`pl-6 py-2 text-[#d51f2c] font-medium text-[13px] hover:bg-white/5 transition-colors flex items-center gap-2 cursor-pointer ${
+                          activeTab === 'food-costing' ? 'font-semibold bg-white/5 border-l border-[#d51f2c] -ml-[1px]' : ''
+                        }`}
+                      >
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#d51f2c]"></span>
+                        Food costing
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            const isSelected =
+              (activeCategory === cat.id && !['categories', 'products', 'modifiers', 'variants', 'food-costing'].includes(activeTab)) ||
+              (cat.id === 'operations' && activeTab === 'dashboard');
             return (
               <div
                 key={cat.id}
                 onClick={() => {
                   setActiveCategory(cat.id);
                   if (cat.id === 'operations') {
-                    setActiveTab('dashboard'); // Dashboard es operaciones
+                    setActiveTab('dashboard');
                   } else {
                     setActiveTab(cat.id);
                   }
@@ -452,34 +546,6 @@ export const RestaurantDashboard: React.FC = () => {
           })}
         </nav>
 
-        {/* Demo Controls inside Sidebar */}
-        <div className="p-4 bg-black/20 border-t border-white/10 text-[11px] text-white/50 space-y-2">
-          {isSaaSTab ? (
-            <>
-              <p className="font-bold text-[#d51f2c] uppercase">SaaS Demo Controls</p>
-              <button
-                onClick={handleToggleApiFailure}
-                className={`w-full py-1 px-2 text-center font-bold text-white rounded transition-colors ${
-                  apiFailedToggle ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                {apiFailedToggle ? 'Simular API Online' : 'Simular Error de API'}
-              </button>
-            </>
-          ) : (
-            <>
-              <p className="font-bold text-[#d51f2c] uppercase">Restaurant Demo Controls</p>
-              <button
-                onClick={handleToggle401}
-                className={`w-full py-1 px-2 text-center font-bold text-white rounded transition-colors ${
-                  demo401Toggle ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-                }`}
-              >
-                {demo401Toggle ? 'Simular Sesión Ok (200)' : 'Forzar Expiración (401)'}
-              </button>
-            </>
-          )}
-        </div>
 
         {/* Bottom items */}
         <div className="p-4 border-t border-white/10 space-y-1">
@@ -564,20 +630,41 @@ export const RestaurantDashboard: React.FC = () => {
         ) : (
           /* Cabecera del Restaurante */
           <>
-            <div className="flex items-center gap-4">
-              <h2 className="font-sans text-sm font-medium tracking-tight text-[#222222]">
-                {activeTab === 'dashboard' ? 'Restaurant Dashboard' : `${activeTab.toUpperCase()} Subsystem`}
-              </h2>
-              {/* Badge de Tier (AC 1.2) */}
-              {tier && (
-                <div className="tier-badge-full flex items-center gap-1.5 shadow-sm">
-                  <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>
-                    star
-                  </span>
-                  {tier}
+            {activeTab === 'categories' ? (
+              <div className="flex items-center gap-6">
+                <div className="flex flex-col text-left">
+                  <nav className="flex items-center gap-1 text-[11px] font-bold uppercase tracking-wider text-[#5f5e5e] mb-1 select-none">
+                    <span>Inventory</span>
+                    <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'wght' 700" }}>chevron_right</span>
+                    <span className="text-[#ae001a] font-bold">Categories</span>
+                  </nav>
+                  <h2 className="text-xl font-bold text-[#ae001a] leading-tight">Product Categories</h2>
                 </div>
-              )}
-            </div>
+                {tier && (
+                  <div className="tier-badge-full flex items-center gap-1.5 shadow-sm bg-[#1d1c17] text-white px-3 py-1 rounded text-[11px] font-bold uppercase tracking-wider">
+                    <span className="material-symbols-outlined text-[14px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      star
+                    </span>
+                    {tier}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-4">
+                <h2 className="font-sans text-sm font-medium tracking-tight text-[#222222]">
+                  {activeTab === 'dashboard' ? 'Restaurant Dashboard' : `${activeTab.toUpperCase()} Subsystem`}
+                </h2>
+                {/* Badge de Tier (AC 1.2) */}
+                {tier && (
+                  <div className="tier-badge-full flex items-center gap-1.5 shadow-sm">
+                    <span className="material-symbols-outlined text-[10px]" style={{ fontVariationSettings: "'FILL' 1" }}>
+                      star
+                    </span>
+                    {tier}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-3 text-secondary">
@@ -648,11 +735,24 @@ export const RestaurantDashboard: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <main className="fixed inset-0 top-16 left-64 overflow-y-auto bg-[#f1ece4] p-8 custom-scrollbar">
+      <main className="fixed top-16 bottom-12 left-64 right-0 overflow-y-auto bg-[#f1ece4] p-8 custom-scrollbar">
         <div className="max-w-7xl mx-auto space-y-8">
           {renderSPAView()}
         </div>
       </main>
+
+      {/* Global Fixed Institutional Footer */}
+      <footer className="fixed bottom-0 right-0 left-64 h-12 bg-[#f1ece4] border-t border-[#e8e2d8] z-40 flex justify-between items-center px-8 text-secondary select-none">
+        <div className="flex items-center gap-2 text-xs font-semibold text-[#5f5e5e]">
+          <span>© 2026 X7 Point of Sale. All rights reserved.</span>
+          <span className="material-symbols-outlined text-xs leading-none">chevron_right</span>
+        </div>
+        <div className="flex gap-6 text-xs font-semibold text-[#5f5e5e]">
+          <a href="#" onClick={(e) => { e.preventDefault(); alert('Privacy Policy simulation'); }} className="hover:underline underline">Privacy Policy</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); alert('Terms of Service simulation'); }} className="hover:underline underline">Terms of Service</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); alert('Help Center simulation'); }} className="hover:underline underline">Help Center</a>
+        </div>
+      </footer>
 
       {/* Floating Action Button (FAB - AC 5.3) */}
       {activeTab === 'dashboard' && (
@@ -676,6 +776,55 @@ export const RestaurantDashboard: React.FC = () => {
 
       {/* Modal Bloqueante de Login Gateway por 401 Unauthorized (AC 1.3) */}
       <LoginGatewayModal isOpen={isAuthLocked} onLoginSuccess={handleLoginSuccess} />
+
+      {/* Botón Flotante de Controles de Demo en la esquina inferior izquierda del canvas */}
+      <div className="fixed bottom-16 left-[272px] z-[9999]">
+        <button
+          onClick={() => setShowDemoPanel(!showDemoPanel)}
+          className="w-10 h-10 bg-[#222222] hover:bg-[#d51f2c] text-white rounded-full shadow-lg flex items-center justify-center border border-white/20 transition-all active:scale-95"
+          title="Demo Simulation Controls"
+        >
+          <span className="material-symbols-outlined text-[20px]">construction</span>
+        </button>
+
+        {showDemoPanel && (
+          <div className="absolute bottom-12 left-0 w-64 bg-[#222222] border border-white/10 p-4 rounded shadow-2xl space-y-2 animate-fade-in text-left">
+            {isSaaSTab ? (
+              <>
+                <p className="font-bold text-[#d51f2c] uppercase text-[10px] tracking-wider">SaaS Demo Controls</p>
+                <p className="text-[10px] text-white/50 mb-2">Simula condiciones de error en las llamadas de API de SaaS.</p>
+                <button
+                  onClick={() => {
+                    handleToggleApiFailure();
+                    setShowDemoPanel(false);
+                  }}
+                  className={`w-full py-1.5 px-2 text-center text-xs font-bold text-white rounded transition-colors ${
+                    apiFailedToggle ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {apiFailedToggle ? 'Simular API Online' : 'Simular Error de API'}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="font-bold text-[#d51f2c] uppercase text-[10px] tracking-wider">Restaurant Demo Controls</p>
+                <p className="text-[10px] text-white/50 mb-2">Simula la expiración de sesión del restaurante.</p>
+                <button
+                  onClick={() => {
+                    handleToggle401();
+                    setShowDemoPanel(false);
+                  }}
+                  className={`w-full py-1.5 px-2 text-center text-xs font-bold text-white rounded transition-colors ${
+                    demo401Toggle ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
+                  }`}
+                >
+                  {demo401Toggle ? 'Simular Sesión Ok (200)' : 'Forzar Expiración (401)'}
+                </button>
+              </>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };

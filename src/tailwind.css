@@ -201,21 +201,29 @@ body.restaurant-active {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24 !important;
 }
 
-/* Estilos de Sidebar específicos del dashboard del restaurante */
-.restaurant-active .side-nav-active {
-  border-left: 2px solid #d51f2c;
-  background-color: #ffffff;
-  color: #222222 !important;
-  font-weight: 600;
-  padding-left: 12px;
+/* Estilos de Sidebar universales y consistentes */
+.side-nav-active {
+  background-color: #d51f2c !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
 }
 
-.restaurant-active .side-nav-inactive {
-  color: rgba(255, 255, 255, 0.7);
-  padding-left: 16px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
+.side-nav-inactive {
+  color: rgba(255, 255, 255, 0.8) !important;
+  padding: 8px 16px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  opacity: 0.8 !important;
+}
+
+.side-nav-inactive:hover {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  opacity: 1 !important;
 }
 
 /* Badge de Tier de Establecimiento */
@@ -243,9 +251,28 @@ body.restaurant-active {
   background: #444444;
 }
 
-/* Forzar que el título del Sidebar sea siempre blanco contra su fondo oscuro */
+/* Forzar que el título del Sidebar sea siempre blanco y de tamaño apropiado contra su fondo oscuro */
 #root aside h2,
 .saas-active aside h2,
 .restaurant-active aside h2 {
   color: #ffffff !important;
+  font-size: 14px !important;
+  font-weight: 900 !important;
+  line-height: 1 !important;
+  letter-spacing: -0.02em !important;
+}
+
+/* Categorias de Producto: Transiciones y botones rápidos */
+.category-row:hover {
+  background-color: #f8f3eb;
+  transition: background-color 0.2s ease;
+}
+
+.quick-launch-btn {
+  border-bottom: 4px solid #ae001a;
+  transition: transform 0.2s ease;
+}
+
+.quick-launch-btn:hover {
+  transform: translateY(-2px);
 }
