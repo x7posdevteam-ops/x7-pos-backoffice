@@ -1,4 +1,5 @@
 import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SubscriptionPlansView } from './SubscriptionPlansView';
 import { saasService } from '../../services/saasService';
@@ -123,5 +124,116 @@ describe('SubscriptionPlansView — table rendering', () => {
     await waitFor(() => {
       expect(screen.getByText('inactive')).toBeInTheDocument();
     });
+  });
+});
+
+describe('SubscriptionPlansView — filter strip', () => {
+  beforeEach(() => {
+    vi.mocked(saasService.getSubscriptionPlans).mockResolvedValue(MOCK_PLANS);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it('renders the search input', async () => {
+    renderView();
+    await waitFor(() => {
+      expect(screen.getByPlaceholderText('Search plans...')).toBeInTheDocument();
+    });
+  });
+
+  it('filters rows by plan name on search input', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText('Search plans...'), 'Pro');
+
+    expect(screen.getByText('Professional')).toBeInTheDocument();
+    expect(screen.queryByText('Starter')).not.toBeInTheDocument();
+    expect(screen.queryByText('Enterprise')).not.toBeInTheDocument();
+    expect(screen.queryByText('Legacy Basic')).not.toBeInTheDocument();
+  });
+
+  it('filters rows by plan description on search input', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText('Search plans...'), 'quick service');
+
+    expect(screen.getByText('Starter')).toBeInTheDocument();
+    expect(screen.queryByText('Professional')).not.toBeInTheDocument();
+  });
+
+  it('filters rows by billing cycle dropdown', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Enterprise')).toBeInTheDocument());
+
+    await user.selectOptions(
+      screen.getByTestId('filter-billing-cycle'),
+      'annual',
+    );
+
+    expect(screen.getByText('Enterprise')).toBeInTheDocument();
+    expect(screen.queryByText('Starter')).not.toBeInTheDocument();
+    expect(screen.queryByText('Professional')).not.toBeInTheDocument();
+  });
+
+  it('filters rows by status dropdown', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Legacy Basic')).toBeInTheDocument());
+
+    await user.selectOptions(
+      screen.getByTestId('filter-status'),
+      'inactive',
+    );
+
+    expect(screen.getByText('Legacy Basic')).toBeInTheDocument();
+    expect(screen.queryByText('Starter')).not.toBeInTheDocument();
+  });
+
+  it('shows warning row when filters yield no results', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText('Search plans...'), 'xyznotexist');
+
+    expect(
+      screen.getByText('No subscription profiles match your search filters'),
+    ).toBeInTheDocument();
+  });
+
+  it('clears all filters when Clear filters is clicked', async () => {
+    const user = userEvent.setup();
+    renderView();
+    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
+
+    await user.type(screen.getByPlaceholderText('Search plans...'), 'xyznotexist');
+    expect(
+      screen.getByText('No subscription profiles match your search filters'),
+    ).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: /clear filters/i }));
+
+    expect(screen.getByText('Starter')).toBeInTheDocument();
+    expect(screen.getByText('Professional')).toBeInTheDocument();
+  });
+
+  it('billing cycle dropdown includes unique values from data', async () => {
+    renderView();
+    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
+
+    const select = screen.getByTestId('filter-billing-cycle') as HTMLSelectElement;
+    const options = Array.from(select.options).map((o) => o.value);
+
+    expect(options).toContain('All Cycles');
+    expect(options).toContain('monthly');
+    expect(options).toContain('annual');
   });
 });
