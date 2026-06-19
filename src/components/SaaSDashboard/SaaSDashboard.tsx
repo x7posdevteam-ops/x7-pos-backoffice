@@ -4,6 +4,7 @@ import { setSimulateApiFailure, getSimulateApiFailure } from '../../services/saa
 import { SubscriptionPlansView } from './SubscriptionPlansView';
 import { SaasLoginOverlay } from './SaasLoginOverlay';
 import { isSaasAuthenticated } from '../../lib/saas-auth-storage';
+import logoX7 from '../../assets/logo-x7.png';
 
 export const SaaSDashboard: React.FC = () => {
   const [saasAuthenticated, setSaasAuthenticated] = useState(isSaasAuthenticated);
@@ -74,6 +75,43 @@ export const SaaSDashboard: React.FC = () => {
       return <SubscriptionPlansView />;
     }
 
+    if (
+      activeTab === 'subscription-applications' ||
+      activeTab === 'subscription-features' ||
+      activeTab === 'subscription-payments'
+    ) {
+      const subConfig = {
+        'subscription-applications': {
+          icon: 'apps',
+          title: 'Platform Applications',
+          desc: 'Software ecosystems and applications linked to subscription plans.',
+        },
+        'subscription-features': {
+          icon: 'featured_play_list',
+          title: 'Feature Catalog Map',
+          desc: 'Master feature flags and platform capability tables.',
+        },
+        'subscription-payments': {
+          icon: 'payments',
+          title: 'Subscription Payments',
+          desc: 'Centralized billing book tracking payment logs from active merchants.',
+        },
+      }[activeTab as 'subscription-applications' | 'subscription-features' | 'subscription-payments'];
+      return (
+        <div className="bg-white border border-[#e8e2d8] p-12 rounded flex flex-col items-center text-center">
+          <span className="material-symbols-outlined text-[#d51f2c] text-6xl">{subConfig.icon}</span>
+          <h2 className="text-h2 font-black text-[#222222] mt-4 uppercase">{subConfig.title}</h2>
+          <p className="text-body-md text-[#666666] mt-2 max-w-md text-center">{subConfig.desc}</p>
+          <button
+            onClick={() => setActiveTab('subscription')}
+            className="mt-6 px-4 py-2 bg-[#222222] text-white font-bold text-label-caps hover:bg-[#d51f2c] transition-all"
+          >
+            Back to Subscription Plans
+          </button>
+        </div>
+      );
+    }
+
     if (activeTab !== 'dashboard') {
       return (
         <div className="bg-white border border-[#e8e2d8] p-12 rounded flex flex-col items-center text-center">
@@ -121,9 +159,10 @@ export const SaaSDashboard: React.FC = () => {
       {/* SideNavBar Shell */}
       <aside className="fixed left-0 top-0 h-full w-64 bg-[#222222] border-r border-[#333333] flex flex-col z-50">
         <div className="p-6 flex items-center gap-3">
+          <img src={logoX7} alt="X7" className="w-20 h-20 object-contain brightness-0 invert" />
           <div className="flex flex-col">
             <h2 className="text-md font-black text-white tracking-tight leading-none">
-              X7 POINT OF SALE
+              POINT OF SALE
             </h2>
             <span className="text-[10px] font-bold uppercase tracking-widest text-[#d51f2c] mt-1">
               Backoffice
@@ -149,7 +188,9 @@ export const SaaSDashboard: React.FC = () => {
                 { id: 'users', label: 'Users', icon: 'group' },
                 { id: 'reports', label: 'Reports', icon: 'description' },
               ].map((item) => {
-                const isActive = activeTab === item.id;
+                const isActive =
+                  activeTab === item.id ||
+                  (item.id === 'subscription' && activeTab.startsWith('subscription-'));
                 return (
                   <button
                     key={item.id}
@@ -278,14 +319,26 @@ export const SaaSDashboard: React.FC = () => {
           <div className="flex justify-between items-end">
             <div>
               <h1 className="font-sans text-h1 text-[#222222] uppercase tracking-tighter">
-                Platform SaaS <span className="text-[#d51f2c]">/</span> {activeTab === 'dashboard' ? 'Overview' : activeTab}
+                Platform SaaS <span className="text-[#d51f2c]">/</span>{' '}
+                {activeTab === 'dashboard' ? 'Overview'
+                  : activeTab === 'subscription' ? 'Subscription Plans'
+                  : activeTab === 'subscription-applications' ? 'Applications'
+                  : activeTab === 'subscription-features' ? 'Feature Catalog'
+                  : activeTab === 'subscription-payments' ? 'Payments'
+                  : activeTab}
               </h1>
               <p className="text-body-md text-[#666666] mt-1">
                 {activeTab === 'dashboard'
                   ? 'Real-time performance metrics and merchant growth tracking.'
                   : activeTab === 'subscription'
                     ? 'Manage subscription tiers, pricing models, and billing cadences for your platform.'
-                    : `Visualización interactiva y gestión para /${activeTab}.`}
+                    : activeTab === 'subscription-applications'
+                      ? 'Manage software ecosystems and applications linked to subscription plans.'
+                      : activeTab === 'subscription-features'
+                        ? 'Configure master feature flags and platform capability tables.'
+                        : activeTab === 'subscription-payments'
+                          ? 'Track payment logs and incoming cash movements from active merchants.'
+                          : `Visualización interactiva y gestión para /${activeTab}.`}
               </p>
             </div>
             {activeTab === 'dashboard' && (
