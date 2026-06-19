@@ -106,7 +106,7 @@ export const SubscriptionPlansView: React.FC = () => {
       description: plan.description,
       price: plan.price.toString(),
       billingCycle: plan.billingCycle,
-      status: plan.status,
+      status: plan.status === 'deleted' ? 'active' : plan.status,
     });
     setEditFormError('');
   };
