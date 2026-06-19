@@ -4,7 +4,7 @@ export interface SubscriptionPlan {
   description: string;
   price: number;
   billingCycle: 'daily' | 'weekly' | 'monthly' | 'yearly';
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'deleted';
 }
 
 export interface CreateSubscriptionPlanDto {

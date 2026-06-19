@@ -243,4 +243,12 @@ export const saasService = {
     );
     return { ...response.data, price: Number(response.data.price) };
   },
+
+  async deleteSubscriptionPlan(id: number): Promise<SubscriptionPlan> {
+    const response = await saasApiFetch<{ data: SubscriptionPlan }>(
+      `subscription-plan/${id}`,
+      { method: 'DELETE' },
+    );
+    return { ...response.data, price: Number(response.data.price) };
+  },
 };
