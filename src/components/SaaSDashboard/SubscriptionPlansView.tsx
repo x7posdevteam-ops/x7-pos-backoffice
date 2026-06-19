@@ -19,7 +19,11 @@ const EMPTY_FORM = {
 const formatPrice = (price: number): string =>
   `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-export const SubscriptionPlansView: React.FC = () => {
+interface SubscriptionPlansViewProps {
+  onNavigate?: (view: string) => void;
+}
+
+export const SubscriptionPlansView: React.FC<SubscriptionPlansViewProps> = ({ onNavigate }) => {
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,8 +51,8 @@ export const SubscriptionPlansView: React.FC = () => {
   const [editFormError, setEditFormError] = useState('');
   const [editSubmitting, setEditSubmitting] = useState(false);
 
-  const [changingStatusPlan, setChangingStatusPlan] = useState<SubscriptionPlan | null>(null);
-  const [changeStatusSubmitting, setChangeStatusSubmitting] = useState(false);
+  const [deletingPlan, setDeletingPlan] = useState<SubscriptionPlan | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
 
   useEffect(() => {
     saasService
@@ -114,35 +118,6 @@ export const SubscriptionPlansView: React.FC = () => {
   const closeEditModal = () => {
     setEditingPlan(null);
     setEditFormError('');
-  };
-
-  const handleChangeStatusConfirm = async () => {
-    if (!changingStatusPlan) return;
-    const newStatus: 'active' | 'inactive' =
-      changingStatusPlan.status === 'active' ? 'inactive' : 'active';
-    setChangeStatusSubmitting(true);
-    try {
-      const updated = await saasService.updateSubscriptionPlan(changingStatusPlan.id, {
-        name: changingStatusPlan.name,
-        description: changingStatusPlan.description,
-        price: changingStatusPlan.price,
-        billingCycle: changingStatusPlan.billingCycle,
-        status: newStatus,
-      } as UpdateSubscriptionPlanDto);
-      setPlans((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
-      setChangingStatusPlan(null);
-      setToast({ message: 'Plan status updated successfully', type: 'success' });
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to update plan status';
-      setChangingStatusPlan(null);
-      if (msg === 'SESSION_EXPIRED') {
-        setToast({ message: 'Session expired. Please refresh the page to sign in again.', type: 'error' });
-      } else {
-        setToast({ message: msg, type: 'error' });
-      }
-    } finally {
-      setChangeStatusSubmitting(false);
-    }
   };
 
   const handleEditSubmit = async (e: React.FormEvent) => {
@@ -260,12 +235,12 @@ export const SubscriptionPlansView: React.FC = () => {
 
         {showModal && <AddPlanModal form={form} setForm={setForm} formError={formError} submitting={submitting} onClose={closeModal} onSubmit={handleSubmit} />}
         {editingPlan && <EditPlanModal form={editForm} setForm={setEditForm} formError={editFormError} submitting={editSubmitting} onClose={closeEditModal} onSubmit={handleEditSubmit} />}
-        {changingStatusPlan && (
-          <ChangeStatusDialog
-            plan={changingStatusPlan}
-            submitting={changeStatusSubmitting}
-            onClose={() => setChangingStatusPlan(null)}
-            onConfirm={handleChangeStatusConfirm}
+        {deletingPlan && (
+          <DeletePlanDialog
+            plan={deletingPlan}
+            submitting={deleteSubmitting}
+            onClose={() => setDeletingPlan(null)}
+            onConfirm={() => {}}
           />
         )}
         {toast && <Toast toast={toast} onDismiss={() => setToast(null)} />}
@@ -447,22 +422,25 @@ export const SubscriptionPlansView: React.FC = () => {
                           type="button"
                           aria-label={`Edit ${plan.name}`}
                           onClick={() => openEditModal(plan)}
-                          className="p-1 hover:text-[#ae001a] transition-colors"
+                          disabled={plan.status === 'deleted'}
+                          className={`p-1 transition-colors ${
+                            plan.status === 'deleted'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'hover:text-[#ae001a]'
+                          }`}
                         >
                           <span className="material-symbols-outlined text-xl">edit</span>
                         </button>
-                        <button
-                          type="button"
-                          aria-label={plan.status === 'active' ? `Deactivate ${plan.name}` : `Activate ${plan.name}`}
-                          onClick={() => setChangingStatusPlan(plan)}
-                          className={`p-1 transition-colors ${
-                            plan.status === 'active' ? 'hover:text-[#ae001a]' : 'hover:text-green-600'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-xl">
-                            {plan.status === 'active' ? 'block' : 'check_circle'}
-                          </span>
-                        </button>
+                        {plan.status !== 'deleted' && (
+                          <button
+                            type="button"
+                            aria-label={`Delete ${plan.name}`}
+                            onClick={() => setDeletingPlan(plan)}
+                            className="p-1 hover:text-red-600 transition-colors"
+                          >
+                            <span className="material-symbols-outlined text-xl">delete</span>
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -482,16 +460,16 @@ export const SubscriptionPlansView: React.FC = () => {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <button type="button" className="bg-white text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest px-6 py-3 border-b-4 border-[#ae001a] hover:-translate-y-0.5 transition-transform">
-            BILLING OVERVIEW
+          <button type="button" onClick={() => onNavigate?.('subscription-applications')} className="bg-white text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest px-6 py-3 border-b-4 border-[#ae001a] hover:-translate-y-0.5 transition-transform">
+            PLATFORM APPLICATIONS
           </button>
-          <button type="button" className="bg-white text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest px-6 py-3 border-b-4 border-[#ae001a] hover:-translate-y-0.5 transition-transform">
-            EXPORT PLANS
+          <button type="button" onClick={() => onNavigate?.('subscription-features')} className="bg-white text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest px-6 py-3 border-b-4 border-[#ae001a] hover:-translate-y-0.5 transition-transform">
+            FEATURE CATALOG MAP
           </button>
-          <button type="button" className="bg-white text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest px-6 py-3 border-b-4 border-[#ae001a] hover:-translate-y-0.5 transition-transform">
-            RUN REVENUE REPORT
+          <button type="button" onClick={() => onNavigate?.('subscription-payments')} className="bg-white text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest px-6 py-3 border-b-4 border-[#ae001a] hover:-translate-y-0.5 transition-transform">
+            SUBSCRIPTION PAYMENTS
           </button>
-          <button type="button" className="bg-[#ae001a] text-white text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded hover:bg-[#930015] transition-colors">
+          <button type="button" className="bg-[#ae001a] text-white text-[11px] font-bold uppercase tracking-widest px-6 py-3 rounded hover:bg-[#930015] hover:-translate-y-0.5 transition-all">
             EMERGENCY SUPPORT
           </button>
         </div>
@@ -549,13 +527,13 @@ export const SubscriptionPlansView: React.FC = () => {
         />
       )}
 
-      {/* Change Status Dialog */}
-      {changingStatusPlan && (
-        <ChangeStatusDialog
-          plan={changingStatusPlan}
-          submitting={changeStatusSubmitting}
-          onClose={() => setChangingStatusPlan(null)}
-          onConfirm={handleChangeStatusConfirm}
+      {/* Delete Plan Dialog */}
+      {deletingPlan && (
+        <DeletePlanDialog
+          plan={deletingPlan}
+          submitting={deleteSubmitting}
+          onClose={() => setDeletingPlan(null)}
+          onConfirm={() => {}}
         />
       )}
 
@@ -914,70 +892,63 @@ const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => (
   </div>
 );
 
-interface ChangeStatusDialogProps {
+interface DeletePlanDialogProps {
   plan: SubscriptionPlan;
   submitting: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
 
-const ChangeStatusDialog: React.FC<ChangeStatusDialogProps> = ({
+const DeletePlanDialog: React.FC<DeletePlanDialogProps> = ({
   plan,
   submitting,
   onClose,
   onConfirm,
-}) => {
-  const isDeactivating = plan.status === 'active';
-  return (
-    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
-      <div className="bg-white w-full max-w-md shadow-2xl">
-        <div className="bg-[#222222] px-6 py-4 flex justify-between items-center">
-          <span className="text-[11px] font-bold uppercase tracking-widest text-white">
-            {isDeactivating ? 'DEACTIVATE PLAN' : 'REACTIVATE PLAN'}
-          </span>
+}) => (
+  <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+    <div className="bg-white w-full max-w-md shadow-2xl">
+      <div className="bg-[#222222] px-6 py-4 flex justify-between items-center">
+        <span className="text-[11px] font-bold uppercase tracking-widest text-white">
+          DELETE PLAN
+        </span>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-white/50 hover:text-white transition-colors"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div className="p-6 space-y-5">
+        <p className="text-sm text-[#1d1c17]">
+          {`Deleting "${plan.name}" will permanently prevent it from being used in any new subscriptions. The record is retained for historical analytics.`}
+        </p>
+        <div className="flex justify-end gap-3">
           <button
             type="button"
             onClick={onClose}
-            className="text-white/50 hover:text-white transition-colors"
+            disabled={submitting}
+            className="px-5 py-2 border border-[#e8e2d8] text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest hover:bg-[#f2ede5] transition-colors disabled:opacity-50"
           >
-            <span className="material-symbols-outlined">close</span>
+            Cancel
           </button>
-        </div>
-        <div className="p-6 space-y-5">
-          <p className="text-sm text-[#1d1c17]">
-            {isDeactivating
-              ? `Deactivating "${plan.name}" will prevent new business accounts from purchasing this tier. All existing merchant subscriptions and historical analytics remain fully preserved.`
-              : `Reactivating "${plan.name}" will make it available for new signups immediately.`}
-          </p>
-          <div className="flex justify-end gap-3">
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={submitting}
-              className="px-5 py-2 border border-[#e8e2d8] text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest hover:bg-[#f2ede5] transition-colors disabled:opacity-50"
-            >
-              Cancel
-            </button>
-            <button
-              type="button"
-              onClick={onConfirm}
-              disabled={submitting}
-              className={`px-5 py-2 text-white text-[11px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 flex items-center gap-2 ${
-                isDeactivating ? 'bg-[#ae001a] hover:bg-[#930015]' : 'bg-green-600 hover:bg-green-700'
-              }`}
-            >
-              {submitting && (
-                <span className="material-symbols-outlined text-base animate-spin">
-                  progress_activity
-                </span>
-              )}
-              {submitting ? 'Saving...' : isDeactivating ? 'Deactivate' : 'Reactivate'}
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={submitting}
+            className="px-5 py-2 bg-[#ae001a] hover:bg-[#930015] text-white text-[11px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 flex items-center gap-2"
+          >
+            {submitting && (
+              <span className="material-symbols-outlined text-base animate-spin">
+                progress_activity
+              </span>
+            )}
+            {submitting ? 'Deleting...' : 'Delete Plan'}
+          </button>
         </div>
       </div>
     </div>
-  );
-};
+  </div>
+);
 
 export default SubscriptionPlansView;

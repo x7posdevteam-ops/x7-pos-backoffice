@@ -10,6 +10,7 @@ vi.mock('../../services/saasService', () => ({
     getSubscriptionPlans: vi.fn(),
     createSubscriptionPlan: vi.fn(),
     updateSubscriptionPlan: vi.fn(),
+    deleteSubscriptionPlan: vi.fn(),
   },
 }));
 
@@ -45,6 +46,14 @@ const MOCK_PLANS: SubscriptionPlan[] = [
     price: 19.99,
     billingCycle: 'monthly',
     status: 'inactive',
+  },
+  {
+    id: 5,
+    name: 'Archived Gold',
+    description: 'Legacy gold tier, permanently discontinued.',
+    price: 299.99,
+    billingCycle: 'monthly',
+    status: 'deleted',
   },
 ];
 
@@ -427,7 +436,7 @@ describe('SubscriptionPlansView — edit plan', () => {
   });
 });
 
-describe('SubscriptionPlansView — change status button', () => {
+describe('SubscriptionPlansView — delete plan', () => {
   beforeEach(() => {
     vi.mocked(saasService.getSubscriptionPlans).mockResolvedValue(MOCK_PLANS);
   });
@@ -436,45 +445,32 @@ describe('SubscriptionPlansView — change status button', () => {
     vi.clearAllMocks();
   });
 
-  it('renders a Deactivate button for each active plan', async () => {
+  it('renders a Delete button for each active plan', async () => {
     renderView();
     await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
-    const deactivateButtons = screen.getAllByRole('button', { name: /^Deactivate /i });
-    expect(deactivateButtons).toHaveLength(3);
+    const deleteButtons = screen.getAllByRole('button', { name: /^Delete /i });
+    expect(deleteButtons).toHaveLength(4); // 3 active + 1 inactive
   });
 
-  it('renders an Activate button for the inactive plan', async () => {
+  it('does NOT render a Delete button for deleted plans', async () => {
     renderView();
-    await waitFor(() => expect(screen.getByText('Legacy Basic')).toBeInTheDocument());
-    expect(screen.getByRole('button', { name: 'Activate Legacy Basic' })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Archived Gold')).toBeInTheDocument());
+    expect(
+      screen.queryByRole('button', { name: 'Delete Archived Gold' }),
+    ).not.toBeInTheDocument();
   });
 
-  it('clicking Deactivate Starter opens dialog with deactivation copy', async () => {
+  it('clicking Delete Starter opens DeletePlanDialog with correct copy', async () => {
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate Starter' }));
+    await user.click(screen.getByRole('button', { name: 'Delete Starter' }));
 
-    expect(screen.getByText('DEACTIVATE PLAN')).toBeInTheDocument();
+    expect(screen.getByText('DELETE PLAN')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Deactivating "Starter" will prevent new business accounts from purchasing this tier. All existing merchant subscriptions and historical analytics remain fully preserved.',
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it('clicking Activate Legacy Basic opens dialog with reactivation copy', async () => {
-    const user = userEvent.setup();
-    renderView();
-    await waitFor(() => expect(screen.getByText('Legacy Basic')).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: 'Activate Legacy Basic' }));
-
-    expect(screen.getByText('REACTIVATE PLAN')).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        'Reactivating "Legacy Basic" will make it available for new signups immediately.',
+        'Deleting "Starter" will permanently prevent it from being used in any new subscriptions. The record is retained for historical analytics.',
       ),
     ).toBeInTheDocument();
   });
@@ -484,113 +480,18 @@ describe('SubscriptionPlansView — change status button', () => {
     renderView();
     await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate Starter' }));
-    expect(screen.getByText('DEACTIVATE PLAN')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete Starter' }));
+    expect(screen.getByText('DELETE PLAN')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
-    expect(screen.queryByText('DEACTIVATE PLAN')).not.toBeInTheDocument();
-  });
-});
-
-describe('SubscriptionPlansView — change status confirm', () => {
-  beforeEach(() => {
-    vi.mocked(saasService.getSubscriptionPlans).mockResolvedValue(MOCK_PLANS);
-  });
-  afterEach(() => {
-    cleanup();
-    vi.clearAllMocks();
+    expect(screen.queryByText('DELETE PLAN')).not.toBeInTheDocument();
   });
 
-  it('confirming deactivation calls updateSubscriptionPlan with status inactive', async () => {
-    const updatedPlan = { ...MOCK_PLANS[0], status: 'inactive' as const };
-    vi.mocked(saasService.updateSubscriptionPlan).mockResolvedValue(updatedPlan);
-    const user = userEvent.setup();
+  it('edit button is disabled for deleted plans', async () => {
     renderView();
-    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Archived Gold')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate Starter' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
-
-    await waitFor(() => {
-      expect(saasService.updateSubscriptionPlan).toHaveBeenCalledWith(1, {
-        name: 'Starter',
-        description: 'Entry-level plan for quick service restaurants.',
-        price: 49.99,
-        billingCycle: 'monthly',
-        status: 'inactive',
-      });
-    });
-  });
-
-  it('confirming reactivation calls updateSubscriptionPlan with status active', async () => {
-    const updatedPlan = { ...MOCK_PLANS[3], status: 'active' as const };
-    vi.mocked(saasService.updateSubscriptionPlan).mockResolvedValue(updatedPlan);
-    const user = userEvent.setup();
-    renderView();
-    await waitFor(() => expect(screen.getByText('Legacy Basic')).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: 'Activate Legacy Basic' }));
-    await user.click(screen.getByRole('button', { name: /^reactivate$/i }));
-
-    await waitFor(() => {
-      expect(saasService.updateSubscriptionPlan).toHaveBeenCalledWith(4, {
-        name: 'Legacy Basic',
-        description: 'Deprecated legacy tier. Grandfathered accounts only.',
-        price: 19.99,
-        billingCycle: 'monthly',
-        status: 'active',
-      });
-    });
-  });
-
-  it('successful deactivation updates the row in-place and shows success toast', async () => {
-    const updatedPlan = { ...MOCK_PLANS[0], status: 'inactive' as const };
-    vi.mocked(saasService.updateSubscriptionPlan).mockResolvedValue(updatedPlan);
-    const user = userEvent.setup();
-    renderView();
-    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: 'Deactivate Starter' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('DEACTIVATE PLAN')).not.toBeInTheDocument();
-      expect(screen.getByText('Plan status updated successfully')).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'Activate Starter' })).toBeInTheDocument();
-    });
-  });
-
-  it('SESSION_EXPIRED closes dialog and shows session-expired toast', async () => {
-    vi.mocked(saasService.updateSubscriptionPlan).mockRejectedValue(new Error('SESSION_EXPIRED'));
-    const user = userEvent.setup();
-    renderView();
-    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: 'Deactivate Starter' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('DEACTIVATE PLAN')).not.toBeInTheDocument();
-      expect(
-        screen.getByText('Session expired. Please refresh the page to sign in again.'),
-      ).toBeInTheDocument();
-    });
-  });
-
-  it('other API error closes dialog and shows error toast', async () => {
-    vi.mocked(saasService.updateSubscriptionPlan).mockRejectedValue(
-      new Error('Internal server error'),
-    );
-    const user = userEvent.setup();
-    renderView();
-    await waitFor(() => expect(screen.getByText('Starter')).toBeInTheDocument());
-
-    await user.click(screen.getByRole('button', { name: 'Deactivate Starter' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('DEACTIVATE PLAN')).not.toBeInTheDocument();
-      expect(screen.getByText('Internal server error')).toBeInTheDocument();
-    });
+    const editButton = screen.getByRole('button', { name: 'Edit Archived Gold' });
+    expect(editButton).toBeDisabled();
   });
 });
