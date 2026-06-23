@@ -9,6 +9,8 @@ vi.mock('../../services/saasService', () => ({
   saasService: {
     getApplications: vi.fn(),
     toggleApplicationInactive: vi.fn(),
+    updateApplication: vi.fn(),
+    createApplication: vi.fn(),
   },
 }));
 
@@ -52,7 +54,7 @@ describe('PlatformApplicationsView — table rendering', () => {
   it('renders the PLATFORM APPLICATIONS heading', async () => {
     renderView();
     await waitFor(() => {
-      expect(screen.getByText('PLATFORM APPLICATIONS')).toBeInTheDocument();
+      expect(screen.getByText('PLATFORM APPLICATION MASTER DIRECTORY')).toBeInTheDocument();
     });
   });
 
@@ -124,7 +126,11 @@ describe('PlatformApplicationsView — empty state', () => {
     vi.mocked(saasService.getApplications).mockResolvedValue([]);
     renderView();
     await waitFor(() => {
-      expect(screen.getByText('No Applications Configured')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "No applications have been registered in the system. Click 'Register Application' to deploy your first software module.",
+        ),
+      ).toBeInTheDocument();
     });
   });
 
@@ -132,7 +138,7 @@ describe('PlatformApplicationsView — empty state', () => {
     vi.mocked(saasService.getApplications).mockResolvedValue([]);
     renderView();
     await waitFor(() => {
-      expect(screen.queryByText('PLATFORM APPLICATIONS')).not.toBeInTheDocument();
+      expect(screen.queryByText('PLATFORM APPLICATION MASTER DIRECTORY')).not.toBeInTheDocument();
     });
   });
 });
@@ -194,7 +200,7 @@ describe('PlatformApplicationsView — filter strip', () => {
 
     await user.type(screen.getByPlaceholderText('Search applications...'), 'xyznotexist');
 
-    expect(screen.getByText('No applications match your search filters')).toBeInTheDocument();
+    expect(screen.getByText('No applications match your filtering criteria')).toBeInTheDocument();
   });
 
   it('clears all filters when Clear filters is clicked', async () => {
@@ -203,7 +209,7 @@ describe('PlatformApplicationsView — filter strip', () => {
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
 
     await user.type(screen.getByPlaceholderText('Search applications...'), 'xyznotexist');
-    expect(screen.getByText('No applications match your search filters')).toBeInTheDocument();
+    expect(screen.getByText('No applications match your filtering criteria')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /clear filters/i }));
 
