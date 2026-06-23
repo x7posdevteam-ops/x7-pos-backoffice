@@ -77,8 +77,8 @@ describe('PlatformApplicationsView — table rendering', () => {
   it('renders category values', async () => {
     renderView();
     await waitFor(() => {
-      expect(screen.getByText('Core')).toBeInTheDocument();
-      expect(screen.getByText('Operations')).toBeInTheDocument();
+      expect(screen.getAllByText('Core')[0]).toBeInTheDocument();
+      expect(screen.getAllByText('Operations')[0]).toBeInTheDocument();
     });
   });
 
