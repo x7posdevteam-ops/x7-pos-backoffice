@@ -3,9 +3,13 @@ import { ProtectedRoute } from './components/ProtectedRoute';
 import { DashboardPage } from './pages/DashboardPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { ResetPasswordSuccessPage } from './pages/ResetPasswordSuccessPage';
+import { CompanyStepPage } from './pages/onboarding/CompanyStepPage';
+import { MerchantStepPage } from './pages/onboarding/MerchantStepPage';
+import { OnboardingRoutes } from './pages/onboarding/OnboardingRoutes';
+import { SubscriptionStepPage } from './pages/onboarding/SubscriptionStepPage';
+import { UserStepPage } from './pages/onboarding/UserStepPage';
 import { isAuthenticated } from './lib/auth-storage';
 
 function RootRedirect() {
@@ -20,13 +24,18 @@ export default function App() {
       <Routes>
         <Route path="/" element={<RootRedirect />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route
           path="/reset-password/success"
           element={<ResetPasswordSuccessPage />}
         />
+        <Route element={<OnboardingRoutes />}>
+          <Route path="/register" element={<SubscriptionStepPage />} />
+          <Route path="/register/company" element={<CompanyStepPage />} />
+          <Route path="/register/merchant" element={<MerchantStepPage />} />
+          <Route path="/register/user" element={<UserStepPage />} />
+        </Route>
         <Route
           path="/dashboard"
           element={
