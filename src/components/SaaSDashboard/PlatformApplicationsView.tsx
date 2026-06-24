@@ -239,14 +239,14 @@ const RegisterAppDialog: React.FC<RegisterAppDialogProps> = ({ submitting, onClo
   );
 };
 
-interface DeactivateAppDialogProps {
+interface DeleteAppDialogProps {
   app: Application;
   submitting: boolean;
   onClose: () => void;
   onConfirm: () => void;
 }
 
-const DeactivateAppDialog: React.FC<DeactivateAppDialogProps> = ({
+const DeleteAppDialog: React.FC<DeleteAppDialogProps> = ({
   app,
   submitting,
   onClose,
@@ -256,7 +256,7 @@ const DeactivateAppDialog: React.FC<DeactivateAppDialogProps> = ({
     <div className="bg-white w-full max-w-md shadow-2xl">
       <div className="bg-[#222222] px-6 py-4 flex justify-between items-center">
         <span className="text-[11px] font-bold uppercase tracking-widest text-white">
-          DEACTIVATE APPLICATION
+          DELETE APPLICATION
         </span>
         <button
           type="button"
@@ -268,7 +268,7 @@ const DeactivateAppDialog: React.FC<DeactivateAppDialogProps> = ({
       </div>
       <div className="p-6 space-y-5">
         <p className="text-sm text-[#1d1c17]">
-          {`Deactivating "${app.name}" will affect all downstream subscription bundles (plan-applications) and operational storefront access points (subscription-applications). This application will no longer be distributed to new subscribers.`}
+          {`Deleting "${app.name}" will permanently prevent it from being distributed to new subscribers. The record is retained for historical analytics.`}
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -290,7 +290,7 @@ const DeactivateAppDialog: React.FC<DeactivateAppDialogProps> = ({
                 progress_activity
               </span>
             )}
-            {submitting ? 'Deactivating...' : 'Deactivate'}
+            {submitting ? 'Deleting...' : 'Delete Application'}
           </button>
         </div>
       </div>
@@ -343,8 +343,8 @@ export const PlatformApplicationsView: React.FC<PlatformApplicationsViewProps> =
   const [editSubmitting, setEditSubmitting] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [createSubmitting, setCreateSubmitting] = useState(false);
-  const [togglingApp, setTogglingApp] = useState<Application | null>(null);
-  const [toggleSubmitting, setToggleSubmitting] = useState(false);
+  const [deletingApp, setDeletingApp] = useState<Application | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   useEffect(() => {
@@ -431,24 +431,24 @@ export const PlatformApplicationsView: React.FC<PlatformApplicationsViewProps> =
     }
   };
 
-  const handleToggleConfirm = async () => {
-    if (!togglingApp) return;
-    setToggleSubmitting(true);
+  const handleDeleteConfirm = async () => {
+    if (!deletingApp) return;
+    setDeleteSubmitting(true);
     try {
-      const updated = await saasService.toggleApplicationInactive(togglingApp);
+      const updated = await saasService.deleteApplication(deletingApp.id);
       setApplications((prev) => prev.map((a) => (a.id === updated.id ? updated : a)));
-      setTogglingApp(null);
-      setToast({ message: 'Application deactivated successfully', type: 'success' });
+      setDeletingApp(null);
+      setToast({ message: 'Application deleted successfully', type: 'success' });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Failed to deactivate application';
-      setTogglingApp(null);
+      const msg = err instanceof Error ? err.message : 'Failed to delete application';
+      setDeletingApp(null);
       if (msg === 'SESSION_EXPIRED') {
         setToast({ message: 'Session expired. Please refresh the page to sign in again.', type: 'error' });
       } else {
         setToast({ message: msg, type: 'error' });
       }
     } finally {
-      setToggleSubmitting(false);
+      setDeleteSubmitting(false);
     }
   };
 
@@ -511,6 +511,7 @@ export const PlatformApplicationsView: React.FC<PlatformApplicationsViewProps> =
             <option value="All Status">All Status</option>
             <option value="active">active</option>
             <option value="inactive">inactive</option>
+            <option value="deleted">deleted</option>
           </select>
           <button
             type="button"
@@ -635,9 +636,13 @@ export const PlatformApplicationsView: React.FC<PlatformApplicationsViewProps> =
                         <span className="bg-green-500/10 text-green-600 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
                           active
                         </span>
-                      ) : (
+                      ) : app.status === 'inactive' ? (
                         <span className="bg-[#5f5e5e]/20 text-[#5f5e5e] text-[10px] font-bold uppercase px-2 py-0.5 rounded">
                           inactive
+                        </span>
+                      ) : (
+                        <span className="bg-red-500/10 text-red-600 text-[10px] font-bold uppercase px-2 py-0.5 rounded">
+                          deleted
                         </span>
                       )}
                     </td>
@@ -647,18 +652,23 @@ export const PlatformApplicationsView: React.FC<PlatformApplicationsViewProps> =
                           type="button"
                           aria-label={`Edit ${app.name}`}
                           onClick={() => setEditingApp(app)}
-                          className="p-1 hover:text-[#ae001a] transition-colors"
+                          disabled={app.status === 'deleted'}
+                          className={`p-1 transition-colors ${
+                            app.status === 'deleted'
+                              ? 'opacity-50 cursor-not-allowed'
+                              : 'hover:text-[#ae001a]'
+                          }`}
                         >
                           <span className="material-symbols-outlined text-xl">edit</span>
                         </button>
-                        {app.status === 'active' && (
+                        {app.status !== 'deleted' && (
                           <button
                             type="button"
-                            aria-label={`Deactivate ${app.name}`}
-                            onClick={() => setTogglingApp(app)}
-                            className="p-1 hover:text-[#ae001a] transition-colors"
+                            aria-label={`Delete ${app.name}`}
+                            onClick={() => setDeletingApp(app)}
+                            className="p-1 hover:text-red-600 transition-colors"
                           >
-                            <span className="material-symbols-outlined text-xl">lock</span>
+                            <span className="material-symbols-outlined text-xl">delete</span>
                           </button>
                         )}
                       </div>
@@ -736,12 +746,12 @@ export const PlatformApplicationsView: React.FC<PlatformApplicationsViewProps> =
         />
       )}
 
-      {togglingApp && (
-        <DeactivateAppDialog
-          app={togglingApp}
-          submitting={toggleSubmitting}
-          onClose={() => setTogglingApp(null)}
-          onConfirm={handleToggleConfirm}
+      {deletingApp && (
+        <DeleteAppDialog
+          app={deletingApp}
+          submitting={deleteSubmitting}
+          onClose={() => setDeletingApp(null)}
+          onConfirm={handleDeleteConfirm}
         />
       )}
 

@@ -8,7 +8,7 @@ import type { Application } from '../../types/subscription';
 vi.mock('../../services/saasService', () => ({
   saasService: {
     getApplications: vi.fn(),
-    toggleApplicationInactive: vi.fn(),
+    deleteApplication: vi.fn(),
     updateApplication: vi.fn(),
     createApplication: vi.fn(),
   },
@@ -35,6 +35,13 @@ const MOCK_APPS: Application[] = [
     description: 'Advanced reporting and analytics module.',
     category: 'Analytics',
     status: 'inactive',
+  },
+  {
+    id: 4,
+    name: 'Legacy Bridge',
+    description: 'Deprecated legacy integration bridge.',
+    category: 'Core',
+    status: 'deleted',
   },
 ];
 
@@ -218,7 +225,7 @@ describe('PlatformApplicationsView — filter strip', () => {
   });
 });
 
-describe('PlatformApplicationsView — toggle status action', () => {
+describe('PlatformApplicationsView — delete application', () => {
   beforeEach(() => {
     vi.mocked(saasService.getApplications).mockResolvedValue(MOCK_APPS);
   });
@@ -227,123 +234,114 @@ describe('PlatformApplicationsView — toggle status action', () => {
     vi.clearAllMocks();
   });
 
-  it('renders a Deactivate button only for active apps', async () => {
+  it('renders a Delete button for each active app', async () => {
     renderView();
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
-
-    const deactivateButtons = screen.getAllByRole('button', { name: /^Deactivate /i });
-    expect(deactivateButtons).toHaveLength(2); // only active apps
+    expect(screen.getByRole('button', { name: 'Delete POS Terminal' })).toBeInTheDocument();
   });
 
-  it('does NOT render a Deactivate button for inactive apps', async () => {
+  it('renders a Delete button for each inactive app', async () => {
     renderView();
     await waitFor(() => expect(screen.getByText('Reporting Suite')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Delete Reporting Suite' })).toBeInTheDocument();
+  });
 
+  it('does NOT render a Delete button for deleted apps', async () => {
+    renderView();
+    await waitFor(() => expect(screen.getByText('Legacy Bridge')).toBeInTheDocument());
     expect(
-      screen.queryByRole('button', { name: 'Deactivate Reporting Suite' }),
+      screen.queryByRole('button', { name: 'Delete Legacy Bridge' }),
     ).not.toBeInTheDocument();
   });
 
-  it('clicking Deactivate opens confirmation modal with app name', async () => {
+  it('clicking Delete opens the confirmation dialog with correct copy', async () => {
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate POS Terminal' }));
+    await user.click(screen.getByRole('button', { name: 'Delete POS Terminal' }));
 
-    expect(screen.getByText('DEACTIVATE APPLICATION')).toBeInTheDocument();
+    expect(screen.getByText('DELETE APPLICATION')).toBeInTheDocument();
     expect(
       screen.getByText(
-        'Deactivating "POS Terminal" will affect all downstream subscription bundles (plan-applications) and operational storefront access points (subscription-applications). This application will no longer be distributed to new subscribers.',
+        'Deleting "POS Terminal" will permanently prevent it from being distributed to new subscribers. The record is retained for historical analytics.',
       ),
     ).toBeInTheDocument();
   });
 
-  it('clicking Cancel closes the confirmation modal', async () => {
+  it('clicking Cancel closes the confirmation dialog', async () => {
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate POS Terminal' }));
-    expect(screen.getByText('DEACTIVATE APPLICATION')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Delete POS Terminal' }));
+    expect(screen.getByText('DELETE APPLICATION')).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
-    expect(screen.queryByText('DEACTIVATE APPLICATION')).not.toBeInTheDocument();
+    expect(screen.queryByText('DELETE APPLICATION')).not.toBeInTheDocument();
   });
 
-  it('confirming calls toggleApplicationInactive with the correct app', async () => {
-    const deactivated = { ...MOCK_APPS[0], status: 'inactive' as const };
-    vi.mocked(saasService.toggleApplicationInactive).mockResolvedValue(deactivated);
+  it('confirming calls deleteApplication with the correct app id', async () => {
+    const deleted = { ...MOCK_APPS[0], status: 'deleted' as const };
+    vi.mocked(saasService.deleteApplication).mockResolvedValue(deleted);
 
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate POS Terminal' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
+    await user.click(screen.getByRole('button', { name: 'Delete POS Terminal' }));
+    await user.click(screen.getByRole('button', { name: /delete application/i }));
 
     await waitFor(() => {
-      expect(saasService.toggleApplicationInactive).toHaveBeenCalledWith(MOCK_APPS[0]);
+      expect(saasService.deleteApplication).toHaveBeenCalledWith(MOCK_APPS[0].id);
     });
   });
 
-  it('successful toggle updates row in-place to inactive and shows success toast', async () => {
-    const deactivated = { ...MOCK_APPS[0], status: 'inactive' as const };
-    vi.mocked(saasService.toggleApplicationInactive).mockResolvedValue(deactivated);
+  it('successful delete updates row in-place to deleted badge and shows success toast', async () => {
+    const deleted = { ...MOCK_APPS[0], status: 'deleted' as const };
+    vi.mocked(saasService.deleteApplication).mockResolvedValue(deleted);
 
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate POS Terminal' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
+    await user.click(screen.getByRole('button', { name: 'Delete POS Terminal' }));
+    await user.click(screen.getByRole('button', { name: /delete application/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText('DEACTIVATE APPLICATION')).not.toBeInTheDocument();
-      expect(screen.getByText('Application deactivated successfully')).toBeInTheDocument();
+      expect(screen.queryByText('DELETE APPLICATION')).not.toBeInTheDocument();
+      expect(screen.getByText('Application deleted successfully')).toBeInTheDocument();
     });
-
-    const cell = screen.getByText('POS Terminal');
-    const row = cell.closest('tr');
-    expect(row).toHaveClass('opacity-75');
   });
 
-  it('SESSION_EXPIRED closes modal and shows session-expired toast', async () => {
-    vi.mocked(saasService.toggleApplicationInactive).mockRejectedValue(
-      new Error('SESSION_EXPIRED'),
-    );
+  it('SESSION_EXPIRED closes dialog and shows session-expired toast', async () => {
+    vi.mocked(saasService.deleteApplication).mockRejectedValue(new Error('SESSION_EXPIRED'));
 
     const user = userEvent.setup();
     renderView();
     await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate POS Terminal' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
+    await user.click(screen.getByRole('button', { name: 'Delete POS Terminal' }));
+    await user.click(screen.getByRole('button', { name: /delete application/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText('DEACTIVATE APPLICATION')).not.toBeInTheDocument();
+      expect(screen.queryByText('DELETE APPLICATION')).not.toBeInTheDocument();
       expect(
         screen.getByText('Session expired. Please refresh the page to sign in again.'),
       ).toBeInTheDocument();
     });
   });
 
-  it('API error closes modal and shows error toast', async () => {
-    vi.mocked(saasService.toggleApplicationInactive).mockRejectedValue(
-      new Error('Application has active subscriptions'),
-    );
-
-    const user = userEvent.setup();
+  it('Edit button is disabled for deleted apps', async () => {
     renderView();
-    await waitFor(() => expect(screen.getByText('POS Terminal')).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText('Legacy Bridge')).toBeInTheDocument());
+    expect(screen.getByRole('button', { name: 'Edit Legacy Bridge' })).toBeDisabled();
+  });
 
-    await user.click(screen.getByRole('button', { name: 'Deactivate POS Terminal' }));
-    await user.click(screen.getByRole('button', { name: /^deactivate$/i }));
-
-    await waitFor(() => {
-      expect(screen.queryByText('DEACTIVATE APPLICATION')).not.toBeInTheDocument();
-      expect(screen.getByText('Application has active subscriptions')).toBeInTheDocument();
-    });
+  it('renders deleted status badge for deleted apps', async () => {
+    renderView();
+    await waitFor(() => expect(screen.getByText('Legacy Bridge')).toBeInTheDocument());
+    expect(screen.getAllByText('deleted').length).toBeGreaterThan(0);
   });
 });
 

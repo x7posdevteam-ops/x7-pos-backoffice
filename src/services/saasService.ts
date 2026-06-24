@@ -279,18 +279,10 @@ export const saasService = {
     return response.data;
   },
 
-  async toggleApplicationInactive(app: Application): Promise<Application> {
+  async deleteApplication(id: number): Promise<Application> {
     const response = await saasApiFetch<{ data: Application }>(
-      `applications/${app.id}`,
-      {
-        method: 'PATCH',
-        body: JSON.stringify({
-          name: app.name,
-          description: app.description,
-          category: app.category,
-          status: 'inactive',
-        }),
-      },
+      `applications/${id}`,
+      { method: 'DELETE' },
     );
     return response.data;
   },

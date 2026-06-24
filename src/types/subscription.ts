@@ -28,7 +28,7 @@ export interface Application {
   name: string;
   description: string;
   category: string;
-  status: 'active' | 'inactive';
+  status: 'active' | 'inactive' | 'deleted';
 }
 
 export interface PlatformFeature {
