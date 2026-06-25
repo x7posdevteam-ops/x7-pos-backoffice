@@ -498,7 +498,7 @@ describe('PlatformFeatureCatalogView — Create Feature modal validation', () =>
   it('clicking Cancel closes the modal', async () => {
     await openModal();
     await userEvent.click(screen.getByRole('button', { name: /cancel/i }));
-    expect(screen.queryByText('CREATE FEATURE')).not.toBeInTheDocument();
+    expect(screen.queryByPlaceholderText('Feature name')).not.toBeInTheDocument();
   });
 });
 
@@ -520,7 +520,7 @@ describe('PlatformFeatureCatalogView — Create Feature submit', () => {
     vi.mocked(saasService.createFeature).mockResolvedValue(NEW_FEATURE);
     await fillAndSubmit();
     await waitFor(() => {
-      expect(screen.queryByText('CREATE FEATURE')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('Feature name')).not.toBeInTheDocument();
       expect(screen.getByText('New Test Feature')).toBeInTheDocument();
       expect(screen.getByText('Feature created successfully')).toBeInTheDocument();
     });
@@ -543,7 +543,7 @@ describe('PlatformFeatureCatalogView — Create Feature submit', () => {
     vi.mocked(saasService.createFeature).mockRejectedValue(new Error('SESSION_EXPIRED'));
     await fillAndSubmit();
     await waitFor(() => {
-      expect(screen.queryByText('CREATE FEATURE')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('Feature name')).not.toBeInTheDocument();
       expect(
         screen.getByText('Session expired. Please refresh the page to sign in again.'),
       ).toBeInTheDocument();
@@ -556,7 +556,7 @@ describe('PlatformFeatureCatalogView — Create Feature submit', () => {
     );
     await fillAndSubmit();
     await waitFor(() => {
-      expect(screen.queryByText('CREATE FEATURE')).not.toBeInTheDocument();
+      expect(screen.queryByPlaceholderText('Feature name')).not.toBeInTheDocument();
       expect(screen.getByText('Feature name already exists')).toBeInTheDocument();
     });
   });
