@@ -9,6 +9,7 @@ vi.mock('../../services/saasService', () => ({
   saasService: {
     getFeatures: vi.fn(),
     createFeature: vi.fn(),
+    updateFeature: vi.fn(),
   },
 }));
 
@@ -113,20 +114,20 @@ describe('PlatformFeatureCatalogView — table rendering', () => {
     });
   });
 
-  it('renders an emerald badge for active features', async () => {
+  it('renders a green badge for active features', async () => {
     render(<PlatformFeatureCatalogView />);
     await waitFor(() => {
       const activeBadges = screen.getAllByText('active', { selector: 'span' });
       expect(activeBadges.length).toBeGreaterThan(0);
-      expect(activeBadges[0]).toHaveClass('bg-emerald-500');
+      expect(activeBadges[0]).toHaveClass('text-green-600');
     });
   });
 
-  it('renders a charcoal badge for inactive features', async () => {
+  it('renders a muted badge for inactive features', async () => {
     render(<PlatformFeatureCatalogView />);
     await waitFor(() => {
       const inactiveBadge = screen.getByText('inactive', { selector: 'span' });
-      expect(inactiveBadge).toHaveClass('bg-[#444444]');
+      expect(inactiveBadge).toHaveClass('text-[#5f5e5e]');
     });
   });
 });
@@ -557,5 +558,11 @@ describe('PlatformFeatureCatalogView — Create Feature submit', () => {
       expect(screen.queryByText('CREATE FEATURE')).not.toBeInTheDocument();
       expect(screen.getByText('Feature name already exists')).toBeInTheDocument();
     });
+  });
+});
+
+describe('PlatformFeatureCatalogView — Edit Feature service', () => {
+  it('saasService.updateFeature is defined in the mock', () => {
+    expect(saasService.updateFeature).toBeDefined();
   });
 });

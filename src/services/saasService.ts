@@ -326,4 +326,15 @@ export const saasService = {
     );
     return response.data;
   },
+
+  async updateFeature(
+    id: number,
+    dto: { name: string; description: string; Unit: string },
+  ): Promise<PlatformFeature> {
+    const response = await saasApiFetch<{ data: PlatformFeature }>(
+      `features/${id}`,
+      { method: 'PATCH', body: JSON.stringify(dto) },
+    );
+    return response.data;
+  },
 };
