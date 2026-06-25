@@ -641,6 +641,7 @@ export const PlatformFeatureCatalogView: React.FC<PlatformFeatureCatalogViewProp
 
       {editingFeature && (
         <EditFeatureDialog
+          key={editingFeature.id}
           feature={editingFeature}
           submitting={editSubmitting}
           onClose={() => setEditingFeature(null)}
