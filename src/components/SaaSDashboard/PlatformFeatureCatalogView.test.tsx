@@ -615,3 +615,82 @@ describe('PlatformFeatureCatalogView — Edit Feature modal', () => {
     expect(saasService.updateFeature).not.toHaveBeenCalled();
   });
 });
+
+describe('PlatformFeatureCatalogView — Edit Feature submit', () => {
+  const UPDATED_FEATURE: PlatformFeature = {
+    id: 1,
+    name: 'Advanced Analytics v2',
+    description: 'Updated description.',
+    Unit: 'user',
+    status: 'active',
+  };
+
+  beforeEach(() => {
+    vi.mocked(saasService.getFeatures).mockResolvedValue(MOCK_FEATURES);
+  });
+
+  async function openAndSubmitEdit() {
+    render(<PlatformFeatureCatalogView />);
+    await waitFor(() => screen.getByText('Advanced Analytics'));
+    const editBtn = screen.getAllByRole('button', { name: /edit advanced analytics/i })[0];
+    await userEvent.click(editBtn);
+    const nameInput = screen.getByDisplayValue('Advanced Analytics');
+    await userEvent.clear(nameInput);
+    await userEvent.type(nameInput, UPDATED_FEATURE.name);
+    await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
+  }
+
+  it('on success: modal closes, row updated in grid, success toast shown', async () => {
+    vi.mocked(saasService.updateFeature).mockResolvedValue(UPDATED_FEATURE);
+    await openAndSubmitEdit();
+    await waitFor(() => {
+      expect(screen.queryByText('EDIT FEATURE')).not.toBeInTheDocument();
+      expect(screen.getByText('Advanced Analytics v2')).toBeInTheDocument();
+      expect(screen.getByText('Feature updated successfully')).toBeInTheDocument();
+    });
+  });
+
+  it('updateFeature is called with the correct id and payload', async () => {
+    vi.mocked(saasService.updateFeature).mockResolvedValue(UPDATED_FEATURE);
+    await openAndSubmitEdit();
+    await waitFor(() => {
+      expect(saasService.updateFeature).toHaveBeenCalledWith(1, {
+        name: UPDATED_FEATURE.name,
+        description: 'Provides advanced data analytics capabilities.',
+        Unit: 'user',
+      });
+    });
+  });
+
+  it('SESSION_EXPIRED: modal closes, session-expired toast shown', async () => {
+    vi.mocked(saasService.updateFeature).mockRejectedValue(new Error('SESSION_EXPIRED'));
+    await openAndSubmitEdit();
+    await waitFor(() => {
+      expect(screen.queryByText('EDIT FEATURE')).not.toBeInTheDocument();
+      expect(
+        screen.getByText('Session expired. Please refresh the page to sign in again.'),
+      ).toBeInTheDocument();
+    });
+  });
+
+  it('API error: modal closes, error toast shown', async () => {
+    vi.mocked(saasService.updateFeature).mockRejectedValue(new Error('Feature name already exists'));
+    await openAndSubmitEdit();
+    await waitFor(() => {
+      expect(screen.queryByText('EDIT FEATURE')).not.toBeInTheDocument();
+      expect(screen.getByText('Feature name already exists')).toBeInTheDocument();
+    });
+  });
+
+  it('Save Changes button is disabled while submitting', async () => {
+    vi.mocked(saasService.updateFeature).mockReturnValue(new Promise(() => {}));
+    render(<PlatformFeatureCatalogView />);
+    await waitFor(() => screen.getByText('Advanced Analytics'));
+    const editBtn = screen.getAllByRole('button', { name: /edit advanced analytics/i })[0];
+    await userEvent.click(editBtn);
+    await userEvent.click(screen.getByRole('button', { name: /save changes/i }));
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /saving/i })).toBeDisabled();
+    });
+  });
+});

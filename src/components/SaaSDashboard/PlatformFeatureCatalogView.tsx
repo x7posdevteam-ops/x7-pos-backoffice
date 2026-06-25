@@ -342,7 +342,26 @@ export const PlatformFeatureCatalogView: React.FC<PlatformFeatureCatalogViewProp
     }
   };
 
-  const handleEditSave = async (_dto: { name: string; description: string; Unit: string }) => {};
+  const handleEditSave = async (dto: { name: string; description: string; Unit: string }) => {
+    if (!editingFeature) return;
+    setEditSubmitting(true);
+    try {
+      const updated = await saasService.updateFeature(editingFeature.id, dto);
+      setFeatures((prev) => prev.map((f) => (f.id === updated.id ? updated : f)));
+      setEditingFeature(null);
+      setToast({ message: 'Feature updated successfully', type: 'success' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update feature';
+      setEditingFeature(null);
+      if (msg === 'SESSION_EXPIRED') {
+        setToast({ message: 'Session expired. Please refresh the page to sign in again.', type: 'error' });
+      } else {
+        setToast({ message: msg, type: 'error' });
+      }
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
 
   if (error) {
     return (
