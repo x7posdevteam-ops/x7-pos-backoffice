@@ -744,8 +744,8 @@ describe('PlanApplicationsView — quick launch panel', () => {
     render(<PlanApplicationsView plan={MOCK_PLAN} />);
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'SUBSCRIPTION PLANS' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'APPLICATIONS CATALOG' })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: 'MASTER FEATURE FLAGS' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'PLATFORM APPLICATIONS' })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: 'FEATURE CATALOG' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'EMERGENCY SUPPORT' })).toBeInTheDocument();
     });
   });
@@ -759,21 +759,21 @@ describe('PlanApplicationsView — quick launch panel', () => {
     expect(onNavigate).toHaveBeenCalledWith('subscription');
   });
 
-  it('calls onNavigate with "subscription-applications" when APPLICATIONS CATALOG is clicked', async () => {
+  it('calls onNavigate with "subscription-applications" when PLATFORM APPLICATIONS is clicked', async () => {
     vi.mocked(saasService.getPlanApplications).mockResolvedValue(MOCK_PLAN_APPS);
     const onNavigate = vi.fn();
     render(<PlanApplicationsView plan={MOCK_PLAN} onNavigate={onNavigate} />);
-    await waitFor(() => screen.getByRole('button', { name: 'APPLICATIONS CATALOG' }));
-    await userEvent.click(screen.getByRole('button', { name: 'APPLICATIONS CATALOG' }));
+    await waitFor(() => screen.getByRole('button', { name: 'PLATFORM APPLICATIONS' }));
+    await userEvent.click(screen.getByRole('button', { name: 'PLATFORM APPLICATIONS' }));
     expect(onNavigate).toHaveBeenCalledWith('subscription-applications');
   });
 
-  it('calls onNavigate with "subscription-features" when MASTER FEATURE FLAGS is clicked', async () => {
+  it('calls onNavigate with "subscription-features" when FEATURE CATALOG is clicked', async () => {
     vi.mocked(saasService.getPlanApplications).mockResolvedValue(MOCK_PLAN_APPS);
     const onNavigate = vi.fn();
     render(<PlanApplicationsView plan={MOCK_PLAN} onNavigate={onNavigate} />);
-    await waitFor(() => screen.getByRole('button', { name: 'MASTER FEATURE FLAGS' }));
-    await userEvent.click(screen.getByRole('button', { name: 'MASTER FEATURE FLAGS' }));
+    await waitFor(() => screen.getByRole('button', { name: 'FEATURE CATALOG' }));
+    await userEvent.click(screen.getByRole('button', { name: 'FEATURE CATALOG' }));
     expect(onNavigate).toHaveBeenCalledWith('subscription-features');
   });
 
