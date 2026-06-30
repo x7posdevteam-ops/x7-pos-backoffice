@@ -2,6 +2,136 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { saasService } from '../../services/saasService';
 import type { PlanApplication, SubscriptionPlan, Application } from '../../types/subscription';
 
+interface EditPlanApplicationDialogProps {
+  pa: PlanApplication;
+  submitting: boolean;
+  onClose: () => void;
+  onSave: (dto: { limits: string; status: 'active' | 'inactive' }) => void;
+}
+
+const EditPlanApplicationDialog: React.FC<EditPlanApplicationDialogProps> = ({
+  pa,
+  submitting,
+  onClose,
+  onSave,
+}) => {
+  const initialStatus: 'active' | 'inactive' = pa.status === 'active' ? 'active' : 'inactive';
+  const [limits, setLimits] = React.useState(pa.limits);
+  const [status, setStatus] = React.useState<'active' | 'inactive'>(initialStatus);
+
+  const limitsExceeded = limits.length > 50;
+  const noChanges = limits === pa.limits && status === initialStatus;
+  const isValid = limits.trim() !== '' && !limitsExceeded && !noChanges;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center p-4">
+      <div className="bg-white w-full max-w-lg shadow-2xl">
+        <div className="bg-[#222222] px-6 py-4 flex justify-between items-center">
+          <span className="text-[11px] font-bold uppercase tracking-widest text-white">
+            EDIT PLAN-APPLICATION
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-white/50 hover:text-white transition-colors"
+          >
+            <span className="material-symbols-outlined">close</span>
+          </button>
+        </div>
+        <div className="p-6 space-y-5">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e]">
+              Subscription Plan
+            </label>
+            <input
+              type="text"
+              readOnly
+              title="Subscription Plan"
+              value={pa.subscriptionPlan.name}
+              className="w-full px-3 py-2 border border-[#e8e2d8] bg-[#ece8e0] text-sm text-[#5f5e5e] cursor-not-allowed outline-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e]">
+              Application
+            </label>
+            <input
+              type="text"
+              readOnly
+              title="Application"
+              value={pa.application.name}
+              className="w-full px-3 py-2 border border-[#e8e2d8] bg-[#ece8e0] text-sm text-[#5f5e5e] cursor-not-allowed outline-none"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <div className="flex justify-between">
+              <label className="text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e]">
+                Usage Limits
+              </label>
+              <span
+                className={`text-[11px] ${limitsExceeded ? 'text-[#ae001a] font-bold' : 'text-[#5f5e5e]'}`}
+              >
+                {limits.length}/50
+              </span>
+            </div>
+            <textarea
+              value={limits}
+              onChange={(e) => setLimits(e.target.value)}
+              rows={3}
+              placeholder="e.g. Up to 5 terminals, 100 users/month"
+              className={`w-full px-3 py-2 border bg-[#fef9f1] text-sm text-[#1d1c17] focus:ring-1 outline-none transition-all resize-none ${
+                limitsExceeded
+                  ? 'border-[#ae001a] focus:border-[#ae001a] focus:ring-[#ae001a]'
+                  : 'border-[#e8e2d8] focus:border-[#ae001a] focus:ring-[#ae001a]'
+              }`}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <label
+              htmlFor="edit-status-select"
+              className="text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e]"
+            >
+              Association Status
+            </label>
+            <select
+              id="edit-status-select"
+              value={status}
+              onChange={(e) => setStatus(e.target.value as 'active' | 'inactive')}
+              className="w-full px-3 py-2 border border-[#e8e2d8] bg-[#fef9f1] text-sm text-[#1d1c17] focus:border-[#ae001a] outline-none transition-all"
+            >
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="px-5 py-2 border border-[#e8e2d8] text-[#1d1c17] text-[11px] font-bold uppercase tracking-widest hover:bg-[#f2ede5] transition-colors disabled:opacity-50"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => onSave({ limits: limits.trim(), status })}
+              disabled={!isValid || submitting}
+              className="px-5 py-2 bg-[#ae001a] hover:bg-[#930015] text-white text-[11px] font-bold uppercase tracking-widest transition-colors disabled:opacity-50 flex items-center gap-2"
+            >
+              {submitting && (
+                <span className="material-symbols-outlined text-base animate-spin">
+                  progress_activity
+                </span>
+              )}
+              {submitting ? 'Saving…' : 'SAVE CHANGES'}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface AssociateAppDialogProps {
   plan: SubscriptionPlan;
   availableApps: Application[];
@@ -162,6 +292,8 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
   const [availableApps, setAvailableApps] = useState<Application[]>([]);
   const [loadingApps, setLoadingApps] = useState(false);
   const [associateSubmitting, setAssociateSubmitting] = useState(false);
+  const [editingPA, setEditingPA] = useState<PlanApplication | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
 
   useEffect(() => {
     saasService
@@ -226,6 +358,29 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
       }
     } finally {
       setAssociateSubmitting(false);
+    }
+  };
+
+  const handleEdit = async (dto: { limits: string; status: 'active' | 'inactive' }) => {
+    setEditSubmitting(true);
+    try {
+      const updated = await saasService.updatePlanApplication(editingPA!.id, dto);
+      setPlanApplications((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+      setEditingPA(null);
+      setToast({ message: 'Plan-application updated successfully', type: 'success' });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Failed to update plan-application';
+      setEditingPA(null);
+      if (msg === 'SESSION_EXPIRED') {
+        setToast({
+          message: 'Session expired. Please refresh the page to sign in again.',
+          type: 'error',
+        });
+      } else {
+        setToast({ message: msg, type: 'error' });
+      }
+    } finally {
+      setEditSubmitting(false);
     }
   };
 
@@ -373,6 +528,9 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
                     <th className="px-6 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e]">
                       Association Status
                     </th>
+                    <th className="px-6 py-3 text-center text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e]">
+                      Actions
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#e8e2d8]">
@@ -391,12 +549,13 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
                           <td className="px-6 py-4 text-center">
                             <div className="h-4 bg-[#ece8e0] rounded animate-pulse w-14 mx-auto" />
                           </td>
+                          <td className="px-6 py-4" />
                         </tr>
                       ))
                     : filteredApplications.map((pa) => (
                         <tr
                           key={pa.id}
-                          className="hover:bg-[#f8f3eb] transition-colors"
+                          className="group hover:bg-[#f8f3eb] transition-colors"
                         >
                           <td className="px-6 py-4">
                             <p className="font-bold text-[#1d1c17]">{pa.application.name}</p>
@@ -428,6 +587,16 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
                                 inactive
                               </span>
                             )}
+                          </td>
+                          <td className="px-6 py-4 text-center">
+                            <button
+                              type="button"
+                              aria-label={`Edit ${pa.application.name}`}
+                              onClick={() => setEditingPA(pa)}
+                              className="opacity-0 group-hover:opacity-100 transition-opacity text-[#5f5e5e] hover:text-[#ae001a]"
+                            >
+                              <span className="material-symbols-outlined text-[20px]">edit</span>
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -473,6 +642,14 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
           submitting={associateSubmitting}
           onClose={() => setShowAssociateModal(false)}
           onSave={handleAssociate}
+        />
+      )}
+      {editingPA && (
+        <EditPlanApplicationDialog
+          pa={editingPA}
+          submitting={editSubmitting}
+          onClose={() => setEditingPA(null)}
+          onSave={handleEdit}
         />
       )}
 
