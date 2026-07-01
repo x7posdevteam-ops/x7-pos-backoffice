@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { saasService } from '../../services/saasService';
-import type { SubscriptionPlan, CreateSubscriptionPlanDto, UpdateSubscriptionPlanDto } from '../../types/subscription';
+import { saasService } from '../../../services/saasService';
+import type { SubscriptionPlan, CreateSubscriptionPlanDto, UpdateSubscriptionPlanDto } from '../../../types/subscription';
 
 const BILLING_CYCLES: CreateSubscriptionPlanDto['billingCycle'][] = [
   'daily',

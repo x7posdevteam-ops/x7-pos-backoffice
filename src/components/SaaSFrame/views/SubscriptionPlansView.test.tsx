@@ -2,10 +2,10 @@ import { cleanup, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { SubscriptionPlansView } from './SubscriptionPlansView';
-import { saasService } from '../../services/saasService';
-import type { SubscriptionPlan } from '../../types/subscription';
+import { saasService } from '../../../services/saasService';
+import type { SubscriptionPlan } from '../../../types/subscription';
 
-vi.mock('../../services/saasService', () => ({
+vi.mock('../../../services/saasService', () => ({
   saasService: {
     getSubscriptionPlans: vi.fn(),
     createSubscriptionPlan: vi.fn(),

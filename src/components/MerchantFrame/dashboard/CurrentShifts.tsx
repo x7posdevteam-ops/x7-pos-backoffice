@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { restaurantService } from '../../services/restaurantService';
-import type { ActiveShift } from '../../services/restaurantService';
+import { restaurantService } from '../../../services/restaurantService';
+import type { ActiveShift } from '../../../services/restaurantService';
 
 interface CurrentShiftsProps {
   refreshTrigger: number;

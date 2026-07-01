@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { saveSaasToken } from '../../lib/saas-auth-storage';
+import { saveSaasToken } from '../../../lib/saas-auth-storage';
 
 interface Props {
   onSuccess: () => void;

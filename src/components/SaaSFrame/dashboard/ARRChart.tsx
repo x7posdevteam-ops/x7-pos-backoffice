@@ -2,8 +2,8 @@ import React, { useEffect, useState, useRef } from 'react';
 import 'chart.js/auto';
 import { Line } from 'react-chartjs-2';
 import type { ChartData, ChartOptions } from 'chart.js';
-import { saasService } from '../../services/saasService';
-import type { RevenueData } from '../../services/saasService';
+import { saasService } from '../../../services/saasService';
+import type { RevenueData } from '../../../services/saasService';
 
 
 export const ARRChart: React.FC = () => {

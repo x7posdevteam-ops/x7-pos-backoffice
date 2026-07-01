@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { getAccessToken, clearAuthSession } from '../../lib/auth-storage';
+import { createPortal } from 'react-dom';
+import { getAccessToken, clearAuthSession } from '../../../lib/auth-storage';
 
 interface Category {
   id: string;
@@ -10,7 +11,7 @@ interface Category {
   status: 'Active' | 'Inactive';
 }
 
-export const ProductCategoriesView: React.FC = () => {
+export const CategoriesView: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -80,7 +81,7 @@ export const ProductCategoriesView: React.FC = () => {
           type,
           parentId,
           linkedProducts,
-          status: 'Active',
+          status: cat.isActive !== false ? 'Active' : 'Inactive',
         };
       });
 
@@ -129,29 +130,6 @@ export const ProductCategoriesView: React.FC = () => {
     setIsModalOpen(true);
   };
 
-  // Eliminar categoría en el backend
-  const handleDeleteCategory = async (id: string) => {
-    if (window.confirm('¿Está seguro de que desea eliminar esta categoría?')) {
-      try {
-        const token = getAccessToken();
-        const headers: Record<string, string> = {};
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-        const res = await fetch(`${API_BASE}/category/${id}`, {
-          method: 'DELETE',
-          headers
-        });
-        if (!res.ok) throw new Error('Error al eliminar la categoría');
-        
-        fetchCategories();
-      } catch (err: any) {
-        console.error(err);
-        alert(err.message || 'Error al eliminar la categoría');
-      }
-    }
-  };
-
   // Guardar Formulario (Add o Edit) en el backend
   const handleSaveCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -177,7 +155,8 @@ export const ProductCategoriesView: React.FC = () => {
           headers,
           body: JSON.stringify({
             name: formName,
-            parentId: parentIdNum
+            parentId: parentIdNum,
+            isActive: formStatus === 'Active'
           })
         });
         if (!res.ok) throw new Error('Error al crear la categoría');
@@ -187,7 +166,8 @@ export const ProductCategoriesView: React.FC = () => {
           headers,
           body: JSON.stringify({
             name: formName,
-            parentId: parentIdNum
+            parentId: parentIdNum,
+            isActive: formStatus === 'Active'
           })
         });
         if (!res.ok) throw new Error('Error al actualizar la categoría');
@@ -237,63 +217,76 @@ export const ProductCategoriesView: React.FC = () => {
         </div>
       </div>
 
-      {isLoading ? (
-        <div className="bg-white border border-[#e8e2d8] p-12 text-center rounded shadow-sm">
-          <span className="material-symbols-outlined animate-spin text-primary text-4xl">
-            sync
+      {/* Tabla Principal */}
+      <div className="bg-white border border-[#e8e2d8] overflow-hidden rounded shadow-sm">
+        <div className="p-4 bg-[#222222] flex justify-between items-center">
+          <span className="text-label-caps font-bold text-white uppercase tracking-wider">
+            CATEGORY HIERARCHY
           </span>
-          <p className="text-secondary text-body-md mt-2 font-sans">Loading category hierarchy...</p>
-        </div>
-      ) : error ? (
-        <div className="bg-white border border-[#e8e2d8] p-12 text-center rounded shadow-sm">
-          <span className="material-symbols-outlined text-[#ba1a1a] text-4xl">
-            error
+          <span className="material-symbols-outlined text-white text-sm cursor-pointer">
+            more_vert
           </span>
-          <p className="text-[#ba1a1a] font-bold mt-2 font-sans">{error}</p>
-          <button
-            onClick={fetchCategories}
-            className="mt-4 px-4 py-2 bg-[#222222] text-white font-bold text-label-caps hover:bg-[#ae001a] transition-all font-sans"
-          >
-            Retry Connection
-          </button>
         </div>
-      ) : (
-        /* Tabla Principal */
-        <div className="bg-white border border-[#e8e2d8] overflow-hidden rounded">
-          <div className="p-4 bg-[#222222] flex justify-between items-center">
-            <span className="text-label-caps font-bold text-white uppercase tracking-wider">
-              CATEGORY HIERARCHY
-            </span>
-            <span className="material-symbols-outlined text-white text-sm cursor-pointer">
-              more_vert
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse">
-              <thead className="bg-[#ece8e0] border-b border-[#e8e2d8]">
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse">
+            <thead className="bg-[#ece8e0] border-b border-[#e8e2d8]">
+              <tr>
+                <th className="px-6 py-3 text-left text-label-caps font-bold text-[#5f5e5e]">
+                  Category Name
+                </th>
+                <th className="px-6 py-3 text-left text-label-caps font-bold text-[#5f5e5e]">
+                  Parent ID
+                </th>
+                <th className="px-6 py-3 text-center text-label-caps font-bold text-[#5f5e5e]">
+                  Linked Products
+                </th>
+                <th className="px-6 py-3 text-center text-label-caps font-bold text-[#5f5e5e]">
+                  Status
+                </th>
+                <th className="px-6 py-3 text-center text-label-caps font-bold text-[#5f5e5e]">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e8e2d8]">
+              {isLoading ? (
                 <tr>
-                  <th className="px-6 py-3 text-left text-label-caps font-bold text-[#5f5e5e]">
-                    Category Name
-                  </th>
-                  <th className="px-6 py-3 text-left text-label-caps font-bold text-[#5f5e5e]">
-                    Parent ID
-                  </th>
-                  <th className="px-6 py-3 text-center text-label-caps font-bold text-[#5f5e5e]">
-                    Linked Products
-                  </th>
-                  <th className="px-6 py-3 text-center text-label-caps font-bold text-[#5f5e5e]">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-right text-label-caps font-bold text-[#5f5e5e]">
-                    Actions
-                  </th>
+                  <td colSpan={5} className="px-6 py-12 text-center text-secondary font-sans bg-white">
+                    <span className="material-symbols-outlined animate-spin text-[#ae001a] text-4xl block mb-2 mx-auto select-none">
+                      sync
+                    </span>
+                    <p className="text-secondary text-body-md mt-2 font-sans">Loading category hierarchy...</p>
+                  </td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e8e2d8]">
-                {filteredCategories.length === 0 ? (
+              ) : error ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-[#ba1a1a] font-sans bg-white">
+                    <span className="material-symbols-outlined text-[#ba1a1a] text-4xl block mb-2 mx-auto select-none">
+                      error
+                    </span>
+                    <p className="font-bold">{error}</p>
+                    <button
+                      onClick={fetchCategories}
+                      className="mt-4 px-4 py-2 bg-[#222222] text-white font-bold text-label-caps hover:bg-[#ae001a] transition-all font-sans cursor-pointer"
+                    >
+                      Retry Connection
+                    </button>
+                  </td>
+                </tr>
+              ) : categories.length === 0 ? (
+                <tr>
+                  <td colSpan={5} className="px-6 py-12 text-center text-secondary font-sans bg-white">
+                      <span className="material-symbols-outlined text-secondary text-5xl block mb-2">
+                        category
+                      </span>
+                      <p className="font-bold text-[#222222] uppercase text-sm">No categories found</p>
+                      <p className="text-xs text-[#666666] mt-1">Click 'Add Category' to start building your hierarchy.</p>
+                    </td>
+                  </tr>
+                ) : filteredCategories.length === 0 ? (
                   <tr>
-                    <td colSpan={5} className="px-6 py-8 text-center text-secondary italic">
-                      No categories found matching filters.
+                    <td colSpan={5} className="px-6 py-8 text-center text-secondary italic bg-white">
+                      No categories match the selected filters.
                     </td>
                   </tr>
                 ) : (
@@ -341,21 +334,14 @@ export const ProductCategoriesView: React.FC = () => {
                             {cat.status}
                           </span>
                         </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
+                        <td className="px-6 py-4 text-center">
+                          <div className="flex justify-center gap-2">
                             <button
                               onClick={() => handleOpenEditModal(cat)}
                               className="p-1 text-[#1d1c17] hover:text-[#ae001a] transition-colors"
                               title="Editar categoría"
                             >
                               <span className="material-symbols-outlined text-[20px]">edit</span>
-                            </button>
-                            <button
-                              onClick={() => handleDeleteCategory(cat.id)}
-                              className="p-1 text-[#1d1c17] hover:text-[#ba1a1a] transition-colors"
-                              title="Eliminar categoría"
-                            >
-                              <span className="material-symbols-outlined text-[20px]">delete</span>
                             </button>
                           </div>
                         </td>
@@ -365,9 +351,8 @@ export const ProductCategoriesView: React.FC = () => {
                 )}
               </tbody>
             </table>
-          </div>
         </div>
-      )}
+      </div>
 
       {/* Footer Quick Actions */}
       <div className="bg-[#2a2a2a] p-8 flex flex-col md:flex-row justify-between items-center gap-6 rounded shadow-lg mt-4">
@@ -406,10 +391,10 @@ export const ProductCategoriesView: React.FC = () => {
       </div>
 
       {/* Modal Interactivo de Add / Edit Category */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/60 z-[9999] flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white border border-[#e8e2d8] rounded shadow-2xl w-full max-w-md overflow-hidden animate-fade-in">
-            <div className="bg-[#222222] p-4 text-white flex justify-between items-center">
+      {isModalOpen && createPortal(
+        <div className="fixed inset-0 bg-black/60 z-[9999] flex justify-center items-start overflow-y-auto p-2 md:pt-4 md:pb-12 backdrop-blur-sm">
+          <div className="bg-white border border-[#e8e2d8] rounded shadow-2xl w-full max-w-md overflow-hidden animate-fade-in max-h-[90vh] flex flex-col">
+            <div className="bg-[#222222] p-4 text-white flex justify-between items-center shrink-0">
               <span className="font-bold text-label-caps uppercase tracking-wider">
                 {modalMode === 'add' ? 'Add Product Category' : 'Edit Product Category'}
               </span>
@@ -420,7 +405,8 @@ export const ProductCategoriesView: React.FC = () => {
                 <span className="material-symbols-outlined">close</span>
               </button>
             </div>
-            <form onSubmit={handleSaveCategory} className="p-6 space-y-4">
+            <form onSubmit={handleSaveCategory} className="flex-1 flex flex-col min-h-0">
+              <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="flex flex-col gap-1.5">
                 <label className="text-[11px] font-bold text-[#5f5e5e] uppercase">
                   Category Name
@@ -495,28 +481,29 @@ export const ProductCategoriesView: React.FC = () => {
                   </label>
                 </div>
               </div>
-
-              <div className="flex justify-end gap-3 pt-4 border-t border-[#e8e2d8]">
+              </div>
+              <div className="p-6 pt-4 border-t border-[#e8e2d8] flex justify-end gap-3 shrink-0 bg-[#fefbf6]">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-4 py-2 border border-[#222222] text-[#222222] font-bold text-label-caps hover:bg-zinc-100 transition-colors"
+                  className="px-4 py-2 border border-[#222222] text-[#222222] font-bold text-label-caps hover:bg-zinc-100 transition-colors font-sans cursor-pointer"
                 >
                   CANCEL
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-[#ae001a] text-white font-bold text-label-caps hover:bg-[#d2272f] transition-colors"
+                  className="px-4 py-2 bg-[#ae001a] text-white font-bold text-label-caps hover:bg-[#d2272f] transition-colors font-sans cursor-pointer"
                 >
                   SAVE CATEGORY
                 </button>
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
 };
 
-export default ProductCategoriesView;
+export default CategoriesView;

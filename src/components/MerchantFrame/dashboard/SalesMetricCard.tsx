@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { restaurantService } from '../../services/restaurantService';
-import type { SalesData } from '../../services/restaurantService';
+import { restaurantService } from '../../../services/restaurantService';
+import type { SalesData } from '../../../services/restaurantService';
 
 interface SalesMetricCardProps {
   refreshTrigger: number;

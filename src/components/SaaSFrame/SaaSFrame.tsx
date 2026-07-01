@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { SaasOverviewContent } from './SaasOverviewContent';
+import { SaasOverviewContent } from './dashboard/SaasOverviewContent';
 import { setSimulateApiFailure, getSimulateApiFailure } from '../../services/saasService';
-import { SubscriptionPlansView } from './SubscriptionPlansView';
-import { SaasLoginOverlay } from './SaasLoginOverlay';
+import { SubscriptionPlansView } from './views/SubscriptionPlansView';
+import { SaasLoginOverlay } from './auth/SaasLoginOverlay';
 import { isSaasAuthenticated } from '../../lib/saas-auth-storage';
 import logoX7 from '../../assets/logo-x7.png';
 
-export const SaaSDashboard: React.FC = () => {
+export const SaaSFrame: React.FC = () => {
   const [saasAuthenticated, setSaasAuthenticated] = useState(isSaasAuthenticated);
   const [activeTab, setActiveTab] = useState<string>('dashboard');
   const [searchText, setSearchText] = useState<string>('');
@@ -379,4 +379,4 @@ export const SaaSDashboard: React.FC = () => {
     </div>
   );
 };
-export default SaaSDashboard;
+export default SaaSFrame;

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { setAuthenticatedState, setSimulate401 } from '../../services/restaurantService';
+import { setAuthenticatedState, setSimulate401 } from '../../../services/restaurantService';
 
 interface ModalProps {
   isOpen: boolean;

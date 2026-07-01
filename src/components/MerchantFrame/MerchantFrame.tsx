@@ -16,14 +16,14 @@ import { navigationService } from '../../services/navigationService';
 import type {
   NavCategory
 } from '../../services/navigationService';
-import { GlobalHeader } from './GlobalHeader';
-import { GlobalFooter } from './GlobalFooter';
-import { SalesMetricCard } from './SalesMetricCard';
-import { TablesOccupancyCard } from './TablesOccupancyCard';
-import { KitchenPerformanceCard } from './KitchenPerformanceCard';
-import { TopSellingItems } from './TopSellingItems';
-import { CurrentShifts } from './CurrentShifts';
-import { KitchenMonitorView } from './KitchenMonitorView';
+import { GlobalHeader } from './layout/GlobalHeader';
+import { GlobalFooter } from './layout/GlobalFooter';
+import { SalesMetricCard } from './dashboard/SalesMetricCard';
+import { TablesOccupancyCard } from './dashboard/TablesOccupancyCard';
+import { KitchenPerformanceCard } from './dashboard/KitchenPerformanceCard';
+import { TopSellingItems } from './dashboard/TopSellingItems';
+import { CurrentShifts } from './dashboard/CurrentShifts';
+import { KitchenMonitorView } from './views/KitchenMonitorView';
 import {
   NewReservationModal,
   VoidTransactionModal,
@@ -31,15 +31,18 @@ import {
   EmergencySupportModal,
   NewQuickOrderModal,
   LoginGatewayModal
-} from './QuickActionModals';
-import { SaasOverviewContent } from '../SaaSDashboard/SaasOverviewContent';
+} from './modals/QuickActionModals';
+import { SaasOverviewContent } from '../SaaSFrame/dashboard/SaasOverviewContent';
+import { SubscriptionPlansView } from '../SaaSFrame/views/SubscriptionPlansView';
 import { setSimulateApiFailure, getSimulateApiFailure } from '../../services/saasService';
 
-import { ProductCategoriesView } from './ProductCategoriesView';
-import { ProductsDirectoryView } from './ProductsDirectoryView';
+import { CategoriesView } from './views/CategoriesView';
+import { ProductsView } from './views/ProductsView';
+import { VariantsView } from './views/VariantsView';
+import { ModifiersView } from './views/ModifiersView';
 import { clearAuthSession } from '../../lib/auth-storage';
 
-export const RestaurantDashboard: React.FC = () => {
+export const MerchantFrame: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -113,22 +116,32 @@ export const RestaurantDashboard: React.FC = () => {
 
   // Auto-expandir la categoría y aplicación activas si corresponden al tab activo
   useEffect(() => {
-    if (profile?.role === 'SaaS Owner') {
-      return;
-    }
-    if (navCategories.length > 0 && activeTab) {
-      navCategories.forEach(cat => {
-        cat.applications.forEach(app => {
-          const hasFeat = app.features.some(f => f.id === activeTab);
-          if (hasFeat) {
-            setExpandedCategories(prev => ({ ...prev, [cat.id]: true }));
-            setExpandedApps(prev => ({ ...prev, [app.id]: true }));
-            setActiveCategory(cat.id);
-          }
+    if (navCategories.length > 0) {
+      // Si hay un tab activo, expandir la categoría y app que lo contengan
+      if (activeTab) {
+        navCategories.forEach(cat => {
+          cat.applications.forEach(app => {
+            const hasFeat = app.features.some(f => f.id === activeTab);
+            if (hasFeat) {
+              setExpandedCategories(prev => ({ ...prev, [cat.id]: true }));
+              setExpandedApps(prev => ({ ...prev, [app.id]: true }));
+              setActiveCategory(cat.id);
+            }
+          });
         });
+      }
+
+      // Si ninguna categoría está expandida, expandir la primera por defecto
+      setExpandedCategories(prev => {
+        const hasAnyExpanded = Object.values(prev).some(Boolean);
+        if (!hasAnyExpanded && navCategories[0]) {
+          return { ...prev, [navCategories[0].id]: true };
+        }
+        return prev;
       });
     }
-  }, [activeTab, navCategories, profile?.role]);
+  }, [navCategories]);
+
 
   // Estados de UI
   const [showNotifications, setShowNotifications] = useState<boolean>(false);
@@ -155,22 +168,12 @@ export const RestaurantDashboard: React.FC = () => {
       setProfile(userProfile);
       await restaurantService.getEstablishmentTier();
 
-      // Auto-inicializar vistas según el rol si no están inicializadas o son incompatibles
+      // Auto-inicializar vistas según el rol
       if (userProfile.role === 'SaaS Owner') {
-        setActiveCategory('saas');
         setActiveTab('saas-dashboard');
       } else {
-        // Para Merchant User, si estaba en saas, cambiar a core/dashboard
-        const isSaaSTab = [
-          'saas-dashboard',
-          'subscription',
-          'companies',
-          'merchants',
-          'users',
-          'reports'
-        ].includes(activeTab);
-
-        if (activeCategory === 'saas' || isSaaSTab) {
+        // Para Merchant User, si el tab activo es exclusivo de SaaS, redirigir al dashboard
+        if (activeTab === 'saas-dashboard') {
           setActiveCategory('core');
           setActiveTab('dashboard');
         }
@@ -210,14 +213,8 @@ export const RestaurantDashboard: React.FC = () => {
   useEffect(() => {
     const rootEl = document.getElementById('root');
     const bodyEl = document.body;
-    const isSaaSTab = [
-      'saas-dashboard',
-      'subscription',
-      'companies',
-      'merchants',
-      'users',
-      'reports'
-    ].includes(activeTab);
+    // Modo SaaS si el rol es SaaS Owner o si el tab es el dashboard de SaaS
+    const isSaaSTab = profile?.role === 'SaaS Owner' || activeTab === 'saas-dashboard';
 
     if (isSaaSTab) {
       rootEl?.classList.remove('restaurant-active');
@@ -368,53 +365,91 @@ export const RestaurantDashboard: React.FC = () => {
     }
 
     if (activeTab === 'categories') {
-      return <ProductCategoriesView />;
+      return <CategoriesView />;
     }
 
     if (activeTab === 'products') {
-      return <ProductsDirectoryView />;
+      return <ProductsView />;
+    }
+
+    if (activeTab === 'modifiers') {
+      return <ModifiersView />;
+    }
+
+    if (activeTab === 'variants') {
+      return <VariantsView />;
+    }
+
+    if (activeTab === 'sub-plans-core') {
+      return <SubscriptionPlansView />;
     }
 
     if (activeTab !== 'dashboard') {
+      // Resolver nombre e icono dinámicamente desde navCategories
+      let featureName = activeTab.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      let featureIcon = 'widgets';
+      let appName = '';
+      let catIcon = 'grid_view';
+
+      for (const cat of navCategories) {
+        for (const app of cat.applications) {
+          const feat = app.features.find(f => f.id === activeTab);
+          if (feat) {
+            featureName = feat.name;
+            featureIcon = cat.icon;
+            appName = app.name;
+            catIcon = cat.icon;
+            break;
+          }
+        }
+        if (appName) break;
+      }
+
       return (
-        <div className="bg-white border border-[#e8e2d8] p-12 text-center rounded shadow-sm">
-          <span className="material-symbols-outlined text-[#d51f2c] text-6xl">
-            {activeTab === 'subscription' && 'loyalty'}
-            {activeTab === 'companies' && 'corporate_fare'}
-            {activeTab === 'merchants' && 'store'}
-            {activeTab === 'users' && 'group'}
-            {activeTab === 'reports' && 'description'}
-            {activeTab === 'core' && 'settings_applications'}
-            {activeTab === 'finance' && 'payments'}
-            {activeTab === 'inventory' && 'inventory_2'}
-            {activeTab === 'commerce' && 'storefront'}
-            {activeTab === 'growth' && 'trending_up'}
-          </span>
-          <h2 className="text-h2 font-black text-[#222222] mt-4 uppercase">
-            {activeTab === 'subscription' && 'Subscription System'}
-            {activeTab === 'companies' && 'Companies registry'}
-            {activeTab === 'merchants' && 'Merchants Registry'}
-            {activeTab === 'users' && 'Users list'}
-            {activeTab === 'reports' && 'System Reports'}
-            {activeTab === 'core' && 'CORE Operational Module'}
-            {activeTab === 'finance' && 'Finance & HR Module'}
-            {activeTab === 'inventory' && 'Inventory Management'}
-            {activeTab === 'commerce' && 'Commerce Operations'}
-            {activeTab === 'growth' && 'Growth Platform'}
-          </h2>
-          <p className="text-body-md text-[#666666] mt-2 max-w-md mx-auto">
-            Acceso virtual al submódulo SPA para la sección{' '}
-            <strong className="text-[#d51f2c]">/{activeTab}</strong>. Navegación libre de recargas físicas.
-          </p>
-          <button
-            onClick={() => {
-              setActiveCategory('operations');
-              setActiveTab('dashboard');
-            }}
-            className="mt-6 px-4 py-2 bg-[#222222] text-white font-bold text-label-caps hover:bg-[#d51f2c] transition-all"
-          >
-            Volver a Operaciones
-          </button>
+        <div className="bg-white border border-[#e8e2d8] rounded shadow-sm overflow-hidden">
+          {/* Header de la vista */}
+          <div className="bg-[#222222] px-8 py-6 flex items-center gap-5">
+            <div className="w-12 h-12 bg-[#d51f2c] rounded flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-white text-2xl">{featureIcon}</span>
+            </div>
+            <div className="text-left">
+              <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mb-0.5">
+                {appName || 'Module'}
+              </p>
+              <h2 className="text-white font-black text-xl uppercase tracking-tight leading-none">
+                {featureName}
+              </h2>
+            </div>
+          </div>
+
+          {/* Cuerpo del stub */}
+          <div className="p-10 text-center">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full mb-6">
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+              <span className="text-amber-700 text-[11px] font-bold uppercase tracking-wider">In Development</span>
+            </div>
+
+            <p className="text-body-md text-[#5f5e5e] max-w-md mx-auto leading-relaxed">
+              El módulo <strong className="text-[#222222]">{featureName}</strong> está en desarrollo activo.
+              Estará disponible en una próxima versión de <strong className="text-[#d51f2c]">X7 Point of Sale</strong>.
+            </p>
+
+            <div className="flex justify-center gap-3 mt-8">
+              <button
+                onClick={() => {
+                  if (profile?.role === 'SaaS Owner') {
+                    setActiveTab('saas-dashboard');
+                  } else {
+                    setActiveCategory('core');
+                    setActiveTab('dashboard');
+                  }
+                }}
+                className="px-5 py-2.5 bg-[#222222] text-white font-bold text-xs uppercase tracking-wider hover:bg-[#d51f2c] transition-all rounded shadow-sm"
+              >
+                Volver al Dashboard
+              </button>
+            </div>
+          </div>
         </div>
       );
     }
@@ -518,52 +553,102 @@ export const RestaurantDashboard: React.FC = () => {
         {/* Sidebar Nav (AC 4.1) */}
         <nav className="flex-1 overflow-y-auto custom-scrollbar sidebar-scroll py-4 space-y-1 text-left">
           {profile?.role === 'SaaS Owner' ? (
-            <div>
-              {/* Categoría Platform SaaS */}
-              <div
-                onClick={() => setActiveCategory(activeCategory === 'saas' ? '' : 'saas')}
-                className={`py-2.5 px-4 flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2 ${
-                  activeCategory === 'saas'
-                    ? 'border-[#d51f2c] bg-white/10 text-white font-semibold'
-                    : 'border-transparent text-white/70 hover:text-white hover:bg-white/5'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[20px] text-[#d51f2c]">dashboard</span>
-                <span className="font-sans text-[13px] tracking-tight">Platform SaaS</span>
-              </div>
+            // Menú dinámico para SaaS Owner — usa navCategories filtrado por isSaaS
+            navCategories.map((cat) => {
+              const isCatExpanded = !!expandedCategories[cat.id];
+              const hasActiveTab = cat.applications.some(app =>
+                app.features.some(f => f.id === activeTab)
+              );
+              const isCatActive = activeCategory === cat.id || hasActiveTab;
 
-              {activeCategory === 'saas' && (
-                <div className="mt-1 ml-10 border-l border-white/10 flex flex-col space-y-1">
-                  {[
-                    { id: 'saas-dashboard', label: 'Dashboard' },
-                    { id: 'subscription', label: 'Subscription System' },
-                    { id: 'companies', label: 'Companies registry' },
-                    { id: 'merchants', label: 'Merchants Registry' },
-                    { id: 'users', label: 'Users list' },
-                    { id: 'reports', label: 'System Reports' },
-                  ].map((sub) => {
-                    const isActive = activeTab === sub.id;
-                    return (
-                      <div
-                        key={sub.id}
-                        onClick={() => {
-                          setActiveCategory('saas');
-                          setActiveTab(sub.id);
-                          navigate('/dashboard', { state: { activeTab: sub.id, activeCategory: 'saas' } });
-                        }}
-                        className={`pl-4 py-1.5 text-body-sm cursor-pointer transition-all duration-200 ${
-                          isActive
-                            ? 'bg-white/50 text-[#222222] font-semibold border-l-2 border-[#222222] -ml-[2px]'
-                            : 'text-white/60 hover:text-white hover:bg-white/5'
-                        }`}
-                      >
-                        {sub.label}
-                      </div>
-                    );
-                  })}
+              return (
+                <div key={cat.id} className="w-full text-left">
+                  {/* L1: Categoría */}
+                  <div
+                    onClick={() => {
+                      setExpandedCategories(prev => ({
+                        ...prev,
+                        [cat.id]: !prev[cat.id]
+                      }));
+                      setActiveCategory(cat.id);
+                    }}
+                    className={`py-2.5 px-4 flex items-center gap-3 cursor-pointer transition-all duration-200 border-l-2 ${
+                      isCatActive
+                        ? 'border-[#d51f2c] bg-white/10 text-white font-semibold'
+                        : 'border-transparent text-white/70 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    <span
+                      className={`material-symbols-outlined text-[20px] transition-colors duration-200 ${
+                        isCatActive ? 'text-[#d51f2c]' : 'text-white/70'
+                      }`}
+                    >
+                      {cat.icon}
+                    </span>
+                    <span className="font-sans text-[13px] tracking-tight">{cat.name}</span>
+                  </div>
+
+                  {/* L2: Aplicaciones */}
+                  {isCatExpanded && (
+                    <div className="mt-1 flex flex-col space-y-1">
+                      {cat.applications.map((app) => {
+                        const isAppExpanded = !!expandedApps[app.id];
+                        const isAppSelected = app.features.some(f => f.id === activeTab);
+
+                        return (
+                          <div key={app.id} className="w-full text-left">
+                            <div
+                              onClick={() => {
+                                setExpandedApps(prev => ({
+                                  ...prev,
+                                  [app.id]: !prev[app.id]
+                                }));
+                              }}
+                              className={`ml-10 py-2 px-3 text-[13px] flex items-center gap-2 cursor-pointer hover:bg-white/5 transition-colors font-sans duration-200 ${
+                                isAppSelected ? 'text-[#d51f2c] font-semibold' : 'text-white/70 hover:text-white'
+                              }`}
+                            >
+                              <span
+                                className={`w-1 h-1 rounded-full ${
+                                  isAppSelected ? 'bg-[#d51f2c]' : 'bg-white/50'
+                                }`}
+                              ></span>
+                              <span>{app.name}</span>
+                            </div>
+
+                            {/* L3: Features */}
+                            {isAppExpanded && (
+                              <div className="ml-14 mt-1 border-l border-white/10 space-y-1">
+                                {app.features.map((feat) => {
+                                  const isFeatActive = activeTab === feat.id;
+                                  return (
+                                    <div
+                                      key={feat.id}
+                                      onClick={() => {
+                                        setActiveCategory(cat.id);
+                                        setActiveTab(feat.id);
+                                        navigate('/dashboard', { state: { activeTab: feat.id, activeCategory: cat.id } });
+                                      }}
+                                      className={`pl-4 py-1.5 text-body-sm cursor-pointer transition-all duration-200 ${
+                                        isFeatActive
+                                          ? 'bg-white/50 text-[#222222] font-semibold border-l-2 border-[#222222] -ml-[2px]'
+                                          : 'text-white/60 hover:text-white hover:bg-white/5'
+                                      }`}
+                                    >
+                                      {feat.name}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
+              );
+            })
           ) : (
             navCategories.map((cat) => {
               const isCatExpanded = !!expandedCategories[cat.id];
@@ -855,4 +940,4 @@ export const RestaurantDashboard: React.FC = () => {
     </div>
   );
 };
-export default RestaurantDashboard;
+export default MerchantFrame;

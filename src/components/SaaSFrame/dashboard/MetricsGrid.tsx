@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { saasService } from '../../services/saasService';
-import type { SaaSMetrics } from '../../services/saasService';
+import { saasService } from '../../../services/saasService';
+import type { SaaSMetrics } from '../../../services/saasService';
 
 interface MetricsGridProps {
   refreshTrigger: number;

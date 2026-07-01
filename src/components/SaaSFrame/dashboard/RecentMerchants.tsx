@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { saasService } from '../../services/saasService';
-import type { RecentMerchant } from '../../services/saasService';
+import { saasService } from '../../../services/saasService';
+import type { RecentMerchant } from '../../../services/saasService';
 
 interface RecentMerchantsProps {
   onNavigateToView: (view: string) => void;

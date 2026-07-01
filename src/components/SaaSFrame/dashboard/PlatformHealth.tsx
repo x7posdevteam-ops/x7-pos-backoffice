@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { saasService } from '../../services/saasService';
-import type { ServiceHealth } from '../../services/saasService';
+import { saasService } from '../../../services/saasService';
+import type { ServiceHealth } from '../../../services/saasService';
 
 interface PlatformHealthProps {
   refreshTrigger: number;
