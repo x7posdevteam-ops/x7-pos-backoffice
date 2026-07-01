@@ -275,7 +275,7 @@ const AssociateAppDialog: React.FC<AssociateAppDialogProps> = ({
 };
 
 interface PlanApplicationsViewProps {
-  plan: SubscriptionPlan;
+  plan?: SubscriptionPlan;
   onNavigate?: (view: string) => void;
 }
 
@@ -283,6 +283,9 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
   plan,
   onNavigate,
 }) => {
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
+  const [selectedPlanState, setSelectedPlanState] = useState<SubscriptionPlan | null>(plan || null);
+  const [loadingPlans, setLoadingPlans] = useState<boolean>(!plan);
   const [planApplications, setPlanApplications] = useState<PlanApplication[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -297,8 +300,34 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
   const [editSubmitting, setEditSubmitting] = useState(false);
 
   useEffect(() => {
+    if (!plan) {
+      setLoadingPlans(true);
+      saasService.getSubscriptionPlans()
+        .then((data) => {
+          setPlans(data);
+          if (data.length > 0) {
+            setSelectedPlanState(data[0]);
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch((err) => {
+          console.error('Failed to load subscription plans', err);
+          setFetchError(true);
+          setLoading(false);
+        })
+        .finally(() => setLoadingPlans(false));
+    } else {
+      setSelectedPlanState(plan);
+    }
+  }, [plan]);
+
+  useEffect(() => {
+    if (!selectedPlanState) return;
+    setLoading(true);
+    setFetchError(false);
     saasService
-      .getPlanApplications(plan.id)
+      .getPlanApplications(selectedPlanState.id)
       .then(setPlanApplications)
       .catch((err) => {
         const msg = err instanceof Error ? err.message : 'Failed to load plan applications';
@@ -313,7 +342,7 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
         }
       })
       .finally(() => setLoading(false));
-  }, [plan.id]);
+  }, [selectedPlanState?.id]);
 
   useEffect(() => {
     if (!toast) return;
@@ -338,7 +367,7 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
     setAssociateSubmitting(true);
     try {
       const newPA = await saasService.createPlanApplication({
-        subscriptionPlan: plan.id,
+        subscriptionPlan: selectedPlanState!.id,
         application: dto.applicationId,
         limits: dto.limits,
         status: 'active',
@@ -400,13 +429,48 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
   const hasActiveFilters = searchQuery !== '' || statusFilter !== '';
   const isFilteredEmpty = !loading && !fetchError && planApplications.length > 0 && filteredApplications.length === 0;
 
+  if (loadingPlans) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <span className="material-symbols-outlined text-4xl text-[#ae001a] animate-spin">
+          progress_activity
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6">
       {/* Dark Title Card */}
-      <div className="bg-[#222222] px-6 py-4">
+      <div className="bg-[#222222] px-6 py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <span className="text-[11px] font-bold uppercase tracking-widest text-white">
-          APPLICATIONS BOUND TO PLAN: {plan.name}
+          APPLICATIONS BOUND TO PLAN: {selectedPlanState?.name || '...'}
         </span>
+
+        {/* Dropdown selector si no se pasa plan por props */}
+        {!plan && plans.length > 0 && (
+          <div className="flex items-center gap-3">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-white/70">
+              Select Plan:
+            </label>
+            <select
+              value={selectedPlanState?.id || ''}
+              onChange={(e) => {
+                const selected = plans.find(p => p.id === parseInt(e.target.value));
+                if (selected) {
+                  setSelectedPlanState(selected);
+                }
+              }}
+              className="bg-[#333333] text-white px-3 py-1.5 border border-white/10 rounded text-xs focus:border-[#d51f2c] focus:ring-1 focus:ring-[#d51f2c] outline-none cursor-pointer"
+            >
+              {plans.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.name} (${p.price})
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Empty State (no apps at all) */}
@@ -676,7 +740,7 @@ export const PlanApplicationsView: React.FC<PlanApplicationsViewProps> = ({
       {/* Associate Application Modal */}
       {showAssociateModal && (
         <AssociateAppDialog
-          plan={plan}
+          plan={selectedPlanState!}
           availableApps={availableApps}
           loadingApps={loadingApps}
           submitting={associateSubmitting}
