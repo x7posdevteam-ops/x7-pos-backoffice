@@ -1,3 +1,4 @@
+//src/components/SaaSDashboard/SubscriptionPlansView.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { saasService } from '../../services/saasService';
 import type { SubscriptionPlan, CreateSubscriptionPlanDto, UpdateSubscriptionPlanDto } from '../../types/subscription';

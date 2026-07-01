@@ -1,3 +1,4 @@
+//src/types/subscription.ts
 export interface SubscriptionPlan {
   id: number;
   name: string;

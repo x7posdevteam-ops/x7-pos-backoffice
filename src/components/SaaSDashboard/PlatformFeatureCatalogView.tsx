@@ -1,3 +1,4 @@
+//src/components/SaaSDashboard/PlatformFeatureCatalogView.tsx
 import React, { useState, useEffect, useMemo } from 'react';
 import { saasService } from '../../services/saasService';
 import type { PlatformFeature } from '../../types/subscription';
