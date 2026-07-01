@@ -34,6 +34,9 @@ import {
 } from './modals/QuickActionModals';
 import { SaasOverviewContent } from '../SaaSFrame/dashboard/SaasOverviewContent';
 import { SubscriptionPlansView } from '../SaaSFrame/views/SubscriptionPlansView';
+import { PlatformApplicationsView } from '../SaaSFrame/views/PlatformApplicationsView';
+import { PlatformFeatureCatalogView } from '../SaaSFrame/views/PlatformFeatureCatalogView';
+import { PlanApplicationsView } from '../SaaSFrame/views/PlanApplicationsView';
 import { setSimulateApiFailure, getSimulateApiFailure } from '../../services/saasService';
 
 import { CategoriesView } from './views/CategoriesView';
@@ -382,6 +385,18 @@ export const MerchantFrame: React.FC = () => {
 
     if (activeTab === 'sub-plans-core') {
       return <SubscriptionPlansView />;
+    }
+
+    if (activeTab === 'apps-config') {
+      return <PlatformApplicationsView />;
+    }
+
+    if (activeTab === 'features-control') {
+      return <PlatformFeatureCatalogView />;
+    }
+
+    if (activeTab === 'plan-apps-rules') {
+      return <PlanApplicationsView />;
     }
 
     if (activeTab !== 'dashboard') {
