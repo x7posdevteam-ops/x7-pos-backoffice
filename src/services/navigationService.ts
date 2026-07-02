@@ -31,6 +31,12 @@ const parseTextFile = (text: string): string[][] => {
     .map(line => line.split('|'));
 };
 
+const MERCHANT_COMPANY_FEATURE_IDS = new Set([
+  'company-profile',
+  'company-configurations',
+  'merchant-directory',
+]);
+
 export const navigationService = {
   async loadAndParseNavigation(userPlanId: number, userRole: string): Promise<NavCategory[]> {
     try {
@@ -73,7 +79,11 @@ export const navigationService = {
             // SaaS Owner ve únicamente características marcadas como SaaS
             return f.isSaaS;
           } else {
-            // Merchant ve características si no son exclusivas del SaaS Owner (e.g., config del core de saas) y entran en su plan
+            // Admin de company/merchants: visible en todos los planes de merchant
+            if (MERCHANT_COMPANY_FEATURE_IDS.has(f.id)) {
+              return true;
+            }
+            // Merchant ve características si no son exclusivas del SaaS Owner y entran en su plan
             const exclusiveSaaS = [
               'saas-dashboard',
               'companies-dashboard',

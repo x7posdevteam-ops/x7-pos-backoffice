@@ -80,7 +80,7 @@ export const MerchantFrame: React.FC = () => {
       setActiveCategory('inventory');
       setActiveTab('categories');
     } else if (path === '/dashboard/merchants') {
-      setActiveCategory('saas');
+      setActiveCategory('platformsaas');
       setActiveTab('merchant-directory');
     } else if (path === '/dashboard/company-profile') {
       setActiveCategory('platformsaas');
