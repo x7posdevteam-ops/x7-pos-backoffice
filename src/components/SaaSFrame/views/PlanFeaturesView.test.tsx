@@ -6,7 +6,7 @@ import { PlanFeaturesView } from './PlanFeaturesView';
 import { saasService } from '../../../services/saasService';
 import type { PlanFeature, SubscriptionPlan, PlatformFeature } from '../../../types/subscription';
 
-vi.mock('../../services/saasService', () => ({
+vi.mock('../../../services/saasService', () => ({
   saasService: {
     getPlanFeatures: vi.fn(),
     getFeatures: vi.fn(),
