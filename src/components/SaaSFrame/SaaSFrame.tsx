@@ -99,6 +99,15 @@ export const SaaSFrame: React.FC = () => {
       );
     }
 
+    if (activeTab === 'subscription-plan-features' && selectedPlan) {
+      return (
+        <PlanFeaturesView
+          plan={selectedPlan}
+          onNavigate={handleNavigateView}
+        />
+      );
+    }
+
     if (
       activeTab === 'subscription-payments' ||
       activeTab === 'subscription-live-installs'
@@ -343,12 +352,14 @@ export const SaaSFrame: React.FC = () => {
               {(activeTab === 'subscription-applications' ||
               activeTab === 'subscription-live-installs' ||
               activeTab === 'subscription-features' ||
-              activeTab === 'subscription-plan-applications') && (
+              activeTab === 'subscription-plan-applications' ||
+              activeTab === 'subscription-plan-features') && (
                 <nav className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-[#5f5e5e] mb-1">
                   <span>SaaS Admin</span>
                   <span className="text-[#d51f2c]">›</span>
                   <span>
-                    {activeTab === 'subscription-plan-applications'
+                    {activeTab === 'subscription-plan-applications' ||
+                    activeTab === 'subscription-plan-features'
                       ? 'Subscription Architecture'
                       : 'Platform Architecture'}
                   </span>
@@ -356,11 +367,13 @@ export const SaaSFrame: React.FC = () => {
                   <span className="text-[#1d1c17]">
                     {activeTab === 'subscription-plan-applications'
                       ? 'Plan Applications'
-                      : activeTab === 'subscription-applications'
-                        ? 'Applications'
-                        : activeTab === 'subscription-live-installs'
-                          ? 'Live Installs'
-                          : 'Feature Catalog'}
+                      : activeTab === 'subscription-plan-features'
+                        ? 'Plan Features'
+                        : activeTab === 'subscription-applications'
+                          ? 'Applications'
+                          : activeTab === 'subscription-live-installs'
+                            ? 'Live Installs'
+                            : 'Feature Catalog'}
                   </span>
                 </nav>
               )}
@@ -373,6 +386,7 @@ export const SaaSFrame: React.FC = () => {
                   : activeTab === 'subscription-payments' ? 'Payments'
                   : activeTab === 'subscription-live-installs' ? 'Live Installs'
                   : activeTab === 'subscription-plan-applications' ? 'Plan Applications'
+                  : activeTab === 'subscription-plan-features' ? 'Plan Features'
                   : activeTab}
               </h1>
               <p className="text-body-md text-[#666666] mt-1">
@@ -390,7 +404,9 @@ export const SaaSFrame: React.FC = () => {
                             ? 'Monitor live merchant profiles mapped to individual applications.'
                             : activeTab === 'subscription-plan-applications'
                               ? `Applications bundled into the "${selectedPlan?.name}" subscription tier.`
-                              : `Visualización interactiva y gestión para /${activeTab}.`}
+                              : activeTab === 'subscription-plan-features'
+                                ? `Feature entitlements and quantitative limits bundled into the "${selectedPlan?.name}" subscription tier.`
+                                : `Visualización interactiva y gestión para /${activeTab}.`}
               </p>
             </div>
             {activeTab === 'dashboard' && (
