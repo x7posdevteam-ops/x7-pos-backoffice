@@ -117,7 +117,7 @@ export const PurchaseOrdersView: React.FC<PurchaseOrdersViewProps> = ({ onNaviga
         ...(token ? { Authorization: `Bearer ${token}` } : {})
       };
 
-      const res = await fetch(`${API_BASE}/purchase-order`, { headers });
+      const res = await fetch(`${API_BASE}/purchase-order?limit=100`, { headers });
 
       if (res.status === 401) {
         clearAuthSession();
